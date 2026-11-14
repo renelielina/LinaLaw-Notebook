@@ -1,0 +1,1255 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1E5B48">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Practice Desk">
+<title>Palma Practice Desk</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,650&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one-column docket for the phone; a sticky header, five tabs pinned at the bottom like a case folder's index tabs */
+:root{
+  --bg:#F1F3F0; --paper:#FFFFFF; --ink:#16212A; --muted:#5D6A72; --line:#D8DEDA;
+  --accent:#1E5B48; --accent-ink:#FFFFFF; --accent-soft:#E2EDE8;
+  --urgent:#A3322C; --urgent-soft:#F6E4E2; --warn:#8A5A00; --warn-soft:#F7EEDB;
+  --f-display:"Source Serif 4", Georgia, "Times New Roman", serif;
+  --f-body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1519; --paper:#172027; --ink:#E6ECEA; --muted:#94A3A6; --line:#2A363D;
+  --accent:#5FB596; --accent-ink:#0B1512; --accent-soft:#1D2F29;
+  --urgent:#F08A80; --urgent-soft:#3A1F1D; --warn:#E3B45A; --warn-soft:#352A15; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1519; --paper:#172027; --ink:#E6ECEA; --muted:#94A3A6; --line:#2A363D;
+  --accent:#5FB596; --accent-ink:#0B1512; --accent-soft:#1D2F29;
+  --urgent:#F08A80; --urgent-soft:#3A1F1D; --warn:#E3B45A; --warn-soft:#352A15; color-scheme:dark}
+*{box-sizing:border-box}
+:root{padding-top:env(safe-area-inset-top,0px)}
+html,body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+.check{flex-direction:row;align-items:center;gap:8px;font-size:.9rem;color:var(--ink)}
+.check input{width:auto}
+ul.tips{margin:0;padding:14px 14px 14px 32px;display:flex;flex-direction:column;gap:6px;font-size:.88rem}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--f-body);padding-bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:760px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-block:14px 10px}
+h1{font:650 1.35rem/1.15 var(--f-display);margin:0;letter-spacing:-.01em}
+h2{font:650 1.15rem/1.2 var(--f-display);margin:0;text-wrap:balance}
+h3{font:600 .72rem/1 var(--f-body);text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:0}
+.sub{color:var(--muted);font-size:.82rem}
+main .wrap{display:flex;flex-direction:column;gap:18px;padding-block:16px 24px}
+section[data-view]{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.spread{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:10px}
+.list{display:flex;flex-direction:column}
+.item{display:grid;grid-template-columns:62px 1fr auto;gap:12px;padding:12px 14px;border-top:1px solid var(--line);align-items:start}
+.item:first-child{border-top:0}
+.item>div{min-width:0}
+.when{font:500 .78rem/1.25 var(--f-mono);font-variant-numeric:tabular-nums;color:var(--muted)}
+.when b{display:block;font:650 1.05rem/1.1 var(--f-display);color:var(--ink)}
+.ttl{font-weight:600;overflow-wrap:anywhere}
+.meta{color:var(--muted);font-size:.84rem;overflow-wrap:anywhere}
+.mono{font-family:var(--f-mono);font-size:.8rem}
+.pill{display:inline-block;font:600 .68rem/1 var(--f-body);text-transform:uppercase;letter-spacing:.06em;padding:4px 7px;border-radius:4px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
+.pill.urgent{background:var(--urgent-soft);color:var(--urgent)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.plain{background:transparent;color:var(--muted);border:1px solid var(--line)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.stat.wide{grid-column:1/-1;display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap}
+.stat.wide .n{font-size:2rem}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:9px 13px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.pnav{display:flex;align-items:center;gap:8px}
+.pnav button{padding:8px 11px}
+.plabel{font:650 1rem/1.2 var(--f-display);min-width:0}
+.total{padding:16px;display:flex;flex-direction:column;gap:4px}
+.total .n{font:650 2.2rem/1 var(--f-display);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.delta{font-size:.82rem;color:var(--muted)}.delta.up{color:var(--accent)}.delta.down{color:var(--urgent)}
+.bars{padding:14px;display:flex;flex-direction:column;gap:10px}
+.bar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;font-size:.86rem}
+.bar .amt{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.bar .track{grid-column:1/-1;height:8px;border-radius:4px;background:var(--accent-soft);overflow:hidden}
+.bar .fill{height:100%;background:var(--accent);border-radius:4px}
+.src{font-size:.7rem;color:var(--muted)}
+.contact{display:flex;flex-direction:column;gap:6px;padding:14px}
+.contact .line{display:flex;gap:8px;align-items:center;flex-wrap:wrap;overflow-wrap:anywhere}
+.contact .line button{padding:5px 8px;font-size:.72rem}
+.bal{font:650 1.3rem/1 var(--f-display);font-variant-numeric:tabular-nums}
+.bal.owe{color:var(--urgent)}
+.file-row{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:10px 14px;border-top:1px solid var(--line)}
+.file-row:first-child{border-top:0}
+.file-row>div{min-width:0}
+.ftype{font:600 .66rem/1 var(--f-mono);padding:6px 5px;border:1px solid var(--line);border-radius:4px;color:var(--muted);text-transform:uppercase}
+a.flink{color:var(--accent);font-weight:600;overflow-wrap:anywhere}
+.stat{padding:12px}
+.stat .n{font:650 1.6rem/1 var(--f-display);font-variant-numeric:tabular-nums}
+.stat .l{font-size:.75rem;color:var(--muted);margin-top:4px}
+button,.btn{font:600 .86rem/1 var(--f-body);border-radius:7px;padding:10px 13px;border:1px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button.ghost{background:transparent;border-color:transparent;color:var(--accent);padding:8px 6px}
+button.danger{color:var(--urgent)}
+button:disabled{opacity:.5;cursor:default}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[contenteditable]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.icon-btns{display:flex;flex-direction:column;gap:4px;align-items:flex-end}
+.icon-btns button{padding:6px 8px;font-size:.75rem}
+form.card{padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+form.card .full{grid-column:1/-1}
+label{display:flex;flex-direction:column;gap:4px;font-size:.76rem;font-weight:600;color:var(--muted);min-width:0}
+input,select,textarea{font:400 .95rem/1.35 var(--f-body);color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:9px 10px;width:100%;min-width:0}
+textarea{resize:vertical;min-height:80px}
+.empty{padding:22px 16px;color:var(--muted);text-align:left}
+.empty strong{display:block;color:var(--ink);font-family:var(--f-display);font-size:1.02rem;margin-bottom:4px}
+.note{font-size:.8rem;color:var(--muted)}
+.banner{padding:10px 12px;border-radius:8px;background:var(--warn-soft);color:var(--warn);font-size:.85rem}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{padding:7px 11px;border-radius:999px;font-size:.8rem}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.col{display:flex;flex-direction:column;gap:8px;min-width:0}
+.col h3{padding:4px 2px}
+.task{padding:10px;display:flex;flex-direction:column;gap:6px}
+.table-wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.84rem}
+th,td{text-align:left;padding:8px 10px;border-top:1px solid var(--line);vertical-align:top}
+th{font:600 .68rem/1.2 var(--f-body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-top:0;white-space:nowrap}
+td.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+#out{min-height:220px;padding:18px;white-space:pre-wrap;font:15px/1.65 var(--f-display);overflow-wrap:anywhere}
+#out:empty::before{content:attr(data-ph);color:var(--muted);font-family:var(--f-body);font-size:.9rem}
+.hello{font:650 1.45rem/1.15 var(--f-display);margin:0;letter-spacing:-.01em;text-wrap:balance}
+.greet{color:var(--muted);font-size:.95rem;margin-top:2px}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.tile{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:112px;padding:14px 6px;background:var(--paper);border:1px solid var(--line);border-radius:14px;color:var(--ink);text-decoration:none;text-align:center;font:600 .84rem/1.2 var(--f-body)}
+.tile svg{width:34px;height:34px;fill:none;stroke:var(--accent);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.tile:active{background:var(--accent-soft)}
+.tile .badge{position:absolute;top:8px;right:8px;min-width:22px;padding:3px 7px;border-radius:999px;font:600 .7rem/1 var(--f-mono);background:var(--accent-soft);color:var(--accent)}
+.tile .badge.hot{background:var(--urgent);color:#fff}
+.tile .badge:empty{display:none}
+.agenda .item{grid-template-columns:62px 1fr}
+.clock{font:600 clamp(3.2rem,18vw,5.5rem)/1 var(--f-mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em;text-align:center;padding:18px 0 6px}
+.clock.small{font-size:2.2rem;padding:6px 0;text-align:left}
+.ring{height:6px;border-radius:3px;background:var(--accent-soft);overflow:hidden;margin:0 14px}
+.ring>div{height:100%;background:var(--accent);transition:width .5s linear}
+.block{display:grid;grid-template-columns:88px 1fr auto;gap:10px;padding:11px 14px;border-top:1px solid var(--line);align-items:start}
+.block:first-child{border-top:0}
+.block>div{min-width:0}
+.block.now{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+.block.done .ttl{text-decoration:line-through;color:var(--muted)}
+.block.fixed .ttl::after{content:" · from calendar";font-weight:400;color:var(--muted);font-size:.8rem}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--muted);vertical-align:middle}
+.dot.on{background:var(--accent)}.dot.err{background:var(--urgent)}.dot.wait{background:var(--warn)}
+.live{display:inline-flex;align-items:center;gap:6px;font-weight:600;color:var(--urgent)}
+.live::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--urgent);animation:blink 1.2s infinite}
+@keyframes blink{50%{opacity:.25}}
+#notes-text{min-height:55vh;font:16px/1.6 var(--f-body)}
+.fab{position:absolute;left:50%;top:-24px;transform:translateX(-50%);width:58px;height:58px;border-radius:50%;border:2px solid var(--accent);background:var(--paper);color:var(--accent);display:grid;place-items:center;padding:0;box-shadow:0 4px 14px rgba(0,0,0,.15)}
+.fab svg{width:28px;height:28px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.sheet{position:fixed;inset:0;z-index:30;background:rgba(10,15,18,.45);display:flex;align-items:flex-end}
+.sheet .inner{width:100%;background:var(--paper);border-radius:18px 18px 0 0;padding:18px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:12px;max-width:760px;margin:0 auto}
+.sheet .grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.sheet .grid button{display:flex;flex-direction:column;align-items:center;gap:8px;padding:14px 4px;border-radius:12px;font-size:.8rem;line-height:1.2}
+.sheet .grid svg{width:28px;height:28px;fill:none;stroke:var(--accent);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--paper);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav.tabs .wrap{position:relative;display:grid;grid-template-columns:repeat(5,1fr);padding-left:max(2px,env(safe-area-inset-left,0px));padding-right:max(4px,env(safe-area-inset-right,0px))}
+nav.tabs a{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 0 10px;color:var(--muted);text-decoration:none;font-size:.7rem;font-weight:600;border-top:2px solid transparent}
+nav.tabs .gap{pointer-events:none}
+nav.tabs a svg{width:23px;height:23px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+nav.tabs a[aria-current="page"]{color:var(--accent);border-top-color:var(--accent)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(86px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 14px;border-radius:8px;font-size:.85rem;z-index:20;max-width:calc(100% - 32px)}
+@media (max-width:640px){
+  .board{grid-template-columns:1fr}
+  form.card{grid-template-columns:1fr}
+  .stats{gap:8px;grid-template-columns:repeat(2,1fr)}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head><body>
+
+<header class="top"><div class="wrap">
+  <div style="min-width:0"><h1 class="hello" id="today-label"></h1><div class="greet" id="greet">Good day, Atty. Palma!</div></div>
+  <a class="btn" href="#sync" id="hdr-sync" style="padding:8px 10px;text-decoration:none;display:flex;align-items:center;gap:6px" aria-label="Sync"><svg style="width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18h10.5a4 4 0 00.6-7.95A6 6 0 006.4 9.2 4.4 4.4 0 007 18z"/></svg><span class="dot" id="sync-dot"></span></a>
+</div></header>
+
+<main><div class="wrap">
+  <div id="sync" class="banner" hidden></div>
+
+  <!-- HOME -->
+  <section data-view="home">
+    <div class="banner" id="gc-banner" hidden style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><span>Google Calendar needs an update.</span><button class="primary" id="gc-banner-btn" style="padding:8px 12px">Update now</button></div>
+    <div class="tiles">
+      <a class="tile" href="#today"><span class="badge" id="t-today"></span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M9 15l2 2 4-4"/></svg><span>Today's events</span></a>
+      <a class="tile" href="#drafting"><span class="badge" id="t-dead"></span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="13" height="13" rx="2"/><path d="M3.5 9.5h13M7 3v4M13 3v4"/><circle cx="17" cy="17" r="4"/><path d="M17 15.3V17l1.2 1"/></svg><span>Deadlines</span></a>
+      <a class="tile" href="#calendar"><span class="badge" id="t-hear"></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4l6 6M11.5 6.5l6 6M13 5l-7 7 3 3 7-7M7.5 13.5L3 18l3 3 4.5-4.5M4 21h9"/></svg><span>Hearings</span></a>
+      <a class="tile" href="#calendar"><span class="badge" id="t-meet"></span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/><circle cx="15.5" cy="14.5" r="1.6"/><path d="M12.8 18.5c.4-1.5 1.5-2.3 2.7-2.3s2.3.8 2.7 2.3"/></svg><span>Client meetings</span></a>
+      <a class="tile" href="#clients"><span class="badge" id="t-cli"></span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c.8-3.6 3.2-5.5 6-5.5s5.2 1.9 6 5.5"/><path d="M16 4.8a3.4 3.4 0 010 6.4M18 14.8c1.6.8 2.6 2.6 3 5.2"/></svg><span>Clients</span></a>
+      <a class="tile" href="#clients"><span class="badge" id="t-ar"></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6M9 16h3"/></svg><span>Unpaid balances</span></a>
+      <a class="tile" href="#income"><span class="badge" id="t-inc"></span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6.5 9.5v5M17.5 9.5v5"/></svg><span>Income</span></a>
+      <a class="tile" href="#income" data-rep><span class="badge" id="t-rep"></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M10 20V4M15 20v-7M20 20v-4M3 20h18"/></svg><span>Reports</span></a>
+      <a class="tile" href="#notarial"><span class="badge" id="t-not"></span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="10" r="5.5"/><path d="M9 15l-1.5 6L12 19l4.5 2L15 15"/></svg><span>Notarial register</span></a>
+      <a class="tile" href="#clients"><span class="badge" id="t-files"></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg><span>Case files</span></a>
+      <a class="tile" href="#notes"><span class="badge" id="t-notes"></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4M9 11h7M9 15h7M9 19h4"/></svg><span>Scratchpad</span></a>
+      <a class="tile" href="#timebox" data-tb="plan"><span class="badge" id="t-tb"></span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6M12 2v3"/></svg><span>Time box</span></a>
+      <a class="tile" href="#timebox" data-tb="bill"><span class="badge" id="t-bt"></span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/><path d="M9.5 3.5L7 2M14.5 3.5L17 2"/></svg><span>Billable hours</span></a>
+      <a class="tile" href="#timebox" data-tb="focus"><span class="badge" id="t-ft"></span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg><span>Focus timer</span></a>
+      <a class="tile" href="#backup"><span class="badge" id="t-bak"></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5"/><path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg><span>Backup</span></a>
+    </div>
+    <div class="spread"><h3>Next on your calendar</h3><button class="ghost" data-go="calendar">See all</button></div>
+    <div class="panel list agenda" id="home-next"></div>
+  </section>
+
+  <!-- TIME BOX -->
+  <section data-view="timebox" hidden>
+    <div class="spread"><h2>Time box</h2>
+      <div class="seg" id="tb-tabs" role="group" aria-label="Time box"><button aria-pressed="true" data-t="plan">Day plan</button><button aria-pressed="false" data-t="bill">Billable</button><button aria-pressed="false" data-t="focus">Focus</button></div></div>
+
+    <div id="tb-plan" class="col" style="gap:14px">
+      <div class="spread"><div class="pnav"><button id="pl-prev" aria-label="Previous day">‹</button><button id="pl-next" aria-label="Next day">›</button><span class="plabel" id="pl-label"></span></div><button class="ghost" id="pl-today">Today</button></div>
+      <div class="panel list" id="pl-list"></div>
+      <div class="note" id="pl-sum"></div>
+      <form class="panel card" id="pl-form">
+        <label>Start<input id="pl-start" type="time" required></label>
+        <label>End<input id="pl-end" type="time" required></label>
+        <label class="full">What will you do?<input id="pl-title" required placeholder="Draft Comment in Dela Cruz case"></label>
+        <label>Type<select id="pl-cat"><option>Drafting</option><option>Research</option><option>Court</option><option>Client work</option><option>Notarial</option><option>Admin</option><option>PNP duty</option><option>Personal / family</option></select></label>
+        <label>Client (optional)<input id="pl-client" list="client-names"></label>
+        <div class="full row"><button class="primary" type="submit">Add time block</button><button type="button" id="pl-copy">Copy yesterday's plan</button></div>
+      </form>
+    </div>
+
+    <div id="tb-bill" class="col" style="gap:14px" hidden>
+      <div class="panel contact" id="bt-running"></div>
+      <form class="panel card" id="bt-form">
+        <label class="full">Client<select id="bt-client" required></select></label>
+        <label>Case<select id="bt-case"></select></label>
+        <label>Rate per hour (₱)<input id="bt-rate" type="number" min="0" step="50"></label>
+        <label class="full">Work done<input id="bt-desc" placeholder="Drafting Answer with Counterclaim"></label>
+        <div class="full row"><button class="primary" type="submit" id="bt-start">Start timer</button><button type="button" id="bt-manual">Add time manually</button></div>
+        <div class="full row" id="bt-manual-row" hidden>
+          <label style="flex:1">Date<input id="bt-mdate" type="date"></label>
+          <label style="flex:1">Hours<input id="bt-mhours" type="number" min="0.1" step="0.1" placeholder="1.5"></label>
+          <button type="button" class="primary" id="bt-msave" style="align-self:flex-end">Save</button>
+        </div>
+      </form>
+      <div class="spread"><h3>Unbilled time</h3></div>
+      <div class="panel list" id="bt-unbilled"></div>
+      <div class="spread"><h3>Recent time entries</h3><span class="note" id="bt-week"></span></div>
+      <div class="panel table-wrap"><table><thead><tr><th>Date</th><th>Client / work</th><th>Time</th><th>Amount</th><th></th></tr></thead><tbody id="bt-body"></tbody></table></div>
+    </div>
+
+    <div id="tb-focus" class="col" style="gap:14px" hidden>
+      <div class="panel" style="padding-bottom:16px">
+        <div class="clock" id="fc-clock">25:00</div>
+        <div class="ring"><div id="fc-ring" style="width:0%"></div></div>
+        <div class="note" id="fc-state" style="text-align:center;margin-top:10px">Ready</div>
+      </div>
+      <div class="chips" id="fc-presets"><button class="chip" data-m="25">25 min</button><button class="chip" data-m="50">50 min</button><button class="chip" data-m="90">90 min</button><button class="chip" data-m="5">5-min break</button><button class="chip" data-m="15">15-min break</button></div>
+      <label>Working on<input id="fc-label" placeholder="Drafting Motion for Reconsideration"></label>
+      <div class="row"><button class="primary" id="fc-go">Start</button><button id="fc-reset">Reset</button><button id="fc-pop">Floating timer</button><button class="ghost" id="fc-notify">Allow alerts</button></div>
+      <p class="note">Starting a session opens a small floating timer that stays on top of your other apps. Keep the app open while the timer runs. Phones may pause apps in the background, so the alarm sounds when you return if it finished while away.</p>
+      <div class="spread"><h3>Focus sessions today</h3><span class="note" id="fc-total"></span></div>
+      <div class="panel list" id="fc-log"></div>
+    </div>
+  </section>
+
+  <!-- SYNC -->
+  <section data-view="sync" hidden>
+    <h2>Sync your devices</h2>
+    <div class="panel contact" id="sy-status"></div>
+    <div class="row" id="sy-actions"></div>
+    <div class="panel card" style="grid-template-columns:1fr" id="sy-setup">
+      <label>Firebase settings (paste the firebaseConfig block)<textarea id="sy-config" rows="7" placeholder='const firebaseConfig = {&#10;  apiKey: "...",&#10;  authDomain: "....firebaseapp.com",&#10;  projectId: "...",&#10;  appId: "..."&#10;};'></textarea></label>
+      <div class="row"><button class="primary" id="sy-save">Save settings</button><button id="sy-clear" class="danger">Remove settings</button></div>
+      <div class="note">These settings are not a password. They only tell the app which Firebase project is yours. Your records are protected by your Google sign-in and the security rules.</div>
+    </div>
+    <h3>Google Calendar</h3>
+    <div class="panel contact" id="gc-card"></div>
+    <p class="note">This sends items one way: from Practice Desk to Google Calendar. Edit hearings and deadlines here, not in Google Calendar, or your changes there will be replaced.</p>
+    <p class="note">Case files you upload stay on the device where you uploaded them. Free Firebase storage does not include files, so keep important originals in Google Drive as well.</p>
+  </section>
+
+  <!-- NOTES -->
+  <section data-view="notes" hidden>
+    <div class="spread"><h2>Scratchpad</h2><span class="note" id="notes-saved"></span></div>
+    <textarea id="notes-text" placeholder="Quick notes: phone messages, things to bring to court, ideas for a pleading…"></textarea>
+    <p class="note">Saves automatically on this phone and is included in your backups.</p>
+  </section>
+
+  <!-- TODAY -->
+  <section data-view="today" hidden>
+    <div class="stats">
+      <div class="panel stat wide"><div><div class="l" style="margin:0 0 6px">Received this month</div><div class="n" id="s-inc">₱0</div></div><button class="ghost" data-go="income">Income &amp; reports</button></div>
+      <div class="panel stat"><div class="n" id="s-hear">0</div><div class="l">Hearings &amp; meetings, next 7 days</div></div>
+      <div class="panel stat"><div class="n" id="s-due">0</div><div class="l">Drafts due in 3 days or late</div></div>
+      <div class="panel stat"><div class="n" id="s-not">0</div><div class="l">Notarial acts this month</div></div>
+      <div class="panel stat"><div class="n" id="s-ar">₱0</div><div class="l">Unpaid client balances</div></div>
+    </div>
+    <div class="spread"><h3>Coming up</h3><button class="ghost" data-go="calendar">Open calendar</button></div>
+    <div class="panel list" id="today-events"></div>
+    <div class="spread"><h3>Drafting deadlines</h3><button class="ghost" data-go="drafting">Open board</button></div>
+    <div class="panel list" id="today-tasks"></div>
+  </section>
+
+  <!-- CALENDAR -->
+  <section data-view="calendar" hidden>
+    <div class="spread"><h2>Hearings &amp; meetings</h2><button class="primary" id="ev-new">Add entry</button></div>
+    <form class="panel card" id="ev-form" hidden>
+      <label>Type<select id="ev-type"><option>Hearing</option><option>Pre-trial</option><option>Mediation / JDR</option><option>Arraignment</option><option>Promulgation</option><option>Client meeting</option><option>Other</option></select></label>
+      <label>Case no.<input id="ev-caseno" placeholder="Civil Case No. 26-123"></label>
+      <label class="full">Case title or purpose<input id="ev-title" required placeholder="People v. Dela Cruz"></label>
+      <label>Court / venue<input id="ev-court" placeholder="RTC Br. 276, Muntinlupa City"></label>
+      <label>Client<input id="ev-client" list="client-names"></label>
+      <label>Date<input id="ev-date" type="date" required></label>
+      <label>Time<input id="ev-time" type="time" value="08:30"></label>
+      <label class="full">Notes (what to bring, witnesses, orders)<textarea id="ev-notes" rows="2"></textarea></label>
+      <div class="full row"><button class="primary" type="submit">Save</button><button type="button" id="ev-cancel">Cancel</button></div>
+    </form>
+    <div class="chips" id="ev-filter">
+      <button class="chip" aria-pressed="true" data-f="up">Upcoming</button>
+      <button class="chip" aria-pressed="false" data-f="past">Past</button>
+    </div>
+    <div class="panel list" id="ev-list"></div>
+    <p class="note">“Phone” saves a calendar file with reminders 1 day and 2 hours before. Open it on your phone and tap Add. “All upcoming” saves every future entry in one file.</p>
+    <div><button id="ev-all">Save all upcoming to phone calendar</button></div>
+  </section>
+
+  <!-- DRAFTING -->
+  <section data-view="drafting" hidden>
+    <div class="spread"><h2>Drafting schedule</h2><button class="primary" id="tk-new">Add pleading</button></div>
+    <form class="panel card" id="tk-form" hidden>
+      <label class="full">Pleading / document<input id="tk-title" required placeholder="Comment/Opposition to Motion to Dismiss"></label>
+      <label>Case / client<input id="tk-matter"></label>
+      <label>Filing deadline<input id="tk-due" type="date" required></label>
+      <label>Stage<select id="tk-stage"><option>To draft</option><option>Drafting</option><option>For review</option><option>Filed</option></select></label>
+      <label>Reckoning (e.g. received order on)<input id="tk-basis" placeholder="Order received Nov 2; 10 days"></label>
+      <div class="full row"><button class="primary" type="submit">Save</button><button type="button" id="tk-cancel">Cancel</button></div>
+    </form>
+    <div class="board" id="board"></div>
+  </section>
+
+  <!-- CLIENTS -->
+  <section data-view="clients" hidden>
+    <datalist id="client-names"></datalist>
+    <form class="panel card" id="cl-form" hidden>
+      <label class="full">Client name<input id="cl-name" required placeholder="Juan Dela Cruz / ABC Trading Corp."></label>
+      <label>Mobile no.<input id="cl-phone" inputmode="tel" placeholder="0917 123 4567"></label>
+      <label>Email<input id="cl-email" type="email"></label>
+      <label class="full">Address<input id="cl-address"></label>
+      <label>Hourly rate for timed work (₱)<input id="cl-rate" type="number" min="0" step="50" placeholder="2500"></label>
+      <label class="full">Fee arrangement<input id="cl-fee" placeholder="₱50,000 acceptance; ₱5,000 per appearance"></label>
+      <label class="full">Notes<textarea id="cl-notes" rows="2" placeholder="Referred by…, best time to call…"></textarea></label>
+      <div class="full row"><button class="primary" type="submit">Save client</button><button type="button" id="cl-cancel">Cancel</button></div>
+    </form>
+
+    <div id="cl-index" class="col" style="gap:14px">
+      <div class="spread"><h2>Clients</h2><button class="primary" id="cl-new">Add client</button></div>
+      <label>Search<input id="cl-q" placeholder="Name, case no., phone"></label>
+      <div class="panel list" id="cl-list"></div>
+    </div>
+
+    <div id="cl-detail" class="col" style="gap:14px" hidden>
+      <div><button class="ghost" id="cl-back">← All clients</button></div>
+      <div class="panel contact" id="cl-head"></div>
+
+      <div class="spread"><h3>Cases</h3><button class="ghost" id="cs-new">Add case</button></div>
+      <form class="panel card" id="cs-form" hidden>
+        <label class="full">Case title<input id="cs-title" required placeholder="Dela Cruz v. ABC Corp."></label>
+        <label>Case no.<input id="cs-no"></label>
+        <label>Court / office<input id="cs-court" placeholder="RTC Br. 276, Muntinlupa"></label>
+        <label>Status<select id="cs-status"><option>Active</option><option>For filing</option><option>Decided</option><option>Closed</option></select></label>
+        <div class="full row"><button class="primary" type="submit">Save case</button><button type="button" id="cs-cancel">Cancel</button></div>
+      </form>
+      <div class="panel list" id="cs-list"></div>
+
+      <div class="spread"><h3>Billing</h3><button class="ghost" id="bl-new">Add entry</button></div>
+      <form class="panel card" id="bl-form" hidden>
+        <label>Entry<select id="bl-type"><option>Acceptance fee</option><option>Appearance fee</option><option>Pleading / drafting fee</option><option>Filing fees &amp; expenses</option><option>Notarial fee</option><option>Other charge</option><option>Payment received</option></select></label>
+        <label>Date<input id="bl-date" type="date" required></label>
+        <label>Amount (₱)<input id="bl-amt" type="number" min="0" step="0.01" required></label>
+        <label>O.R. / reference no.<input id="bl-or"></label>
+        <label class="full" id="bl-for-wrap" hidden>Payment is for<select id="bl-for"></select></label>
+        <label class="full">Description<input id="bl-desc" placeholder="Appearance, pre-trial of Nov 12"></label>
+        <div class="full row"><button class="primary" type="submit">Save entry</button><button type="button" id="bl-cancel">Cancel</button></div>
+      </form>
+      <div class="panel table-wrap"><table>
+        <thead><tr><th>Date</th><th>Entry</th><th>Charge</th><th>Paid</th><th></th></tr></thead>
+        <tbody id="bl-body"></tbody>
+      </table></div>
+      <div class="spread"><div><div class="note">Balance due</div><div class="bal" id="bl-bal">₱0.00</div></div><button id="bl-soa">Statement of account (Word)</button></div>
+
+      <div class="spread"><h3>Case files</h3></div>
+      <div class="panel card" style="grid-template-columns:1fr">
+        <label>File under<select id="fl-case"></select></label>
+        <label>Upload soft copies (PDF, photos, text)<input id="fl-input" type="file" multiple accept=".pdf,image/*,.txt,.csv,.md,.doc,.docx,.xls,.xlsx"></label>
+        <div class="note" id="fl-note">PDF, photos and Word files. Large files fill phone storage quickly; keep originals elsewhere too.</div>
+      </div>
+      <div class="panel" id="fl-list"></div>
+
+      <div class="spread"><h3>Legal research</h3></div>
+      <div class="panel card">
+        <label>For case<select id="rq-case"></select></label>
+        <label>Issues<input id="rq-issues" placeholder="Prescription; estafa vs. breach of contract"></label>
+        <label class="full">Key facts (optional)<textarea id="rq-facts" rows="2"></textarea></label>
+        <div class="full row"><button class="primary" id="rq-go">Copy research question</button><a class="btn" href="https://anycase.ai" target="_blank" rel="noopener" style="text-decoration:none">Open Anycase</a></div>
+        <div class="full note">Copy the question, open Anycase, paste it and run the search. Then paste what you find, with case names and G.R. numbers, into the notes below.</div>
+        <label class="full">Research notes for this case<textarea id="rq-notes" rows="6" placeholder="Paste Anycase findings, doctrines and citations here"></textarea></label>
+        <div class="full note" id="rq-saved"></div>
+      </div>
+
+      <div class="spread"><h3>Hearings for this client</h3></div>
+      <div class="panel list" id="cl-ev"></div>
+      <div><button class="danger" id="cl-del">Delete client and all records</button></div>
+    </div>
+  </section>
+
+  <!-- INCOME -->
+  <section data-view="income" hidden>
+    <div class="spread"><h2>Income</h2>
+      <div class="seg" id="in-kind" role="group" aria-label="Period"><button aria-pressed="false" data-k="week">Week</button><button aria-pressed="true" data-k="month">Month</button><button aria-pressed="false" data-k="year">Year</button></div></div>
+    <div class="spread"><div class="pnav"><button id="in-prev" aria-label="Previous period">‹</button><button id="in-next" aria-label="Next period">›</button><span class="plabel" id="in-label"></span></div><button class="ghost" id="in-now">This period</button></div>
+    <div class="panel total"><div class="l note">Total received</div><div class="n" id="in-total">₱0.00</div><div class="delta" id="in-delta"></div></div>
+    <div class="panel bars" id="in-bars"></div>
+    <div class="spread"><h3>Record income</h3></div>
+    <div class="row">
+      <button data-quick="Retainer – Brgy. Putatan">Retainer: Brgy. Putatan</button>
+      <button data-quick="Retainer – NTC">Retainer: NTC</button>
+      <button class="primary" id="in-new">Other income</button>
+    </div>
+    <form class="panel card" id="in-form" hidden>
+      <label>Category<select id="in-cat"></select></label>
+      <label>Date received<input id="in-date" type="date" required></label>
+      <label>Amount (₱)<input id="in-amt" type="number" min="0" step="0.01" required></label>
+      <label>O.R. / reference no.<input id="in-or"></label>
+      <label class="full">Received from<input id="in-from" list="client-names" placeholder="Client or office"></label>
+      <label class="full">Particulars<input id="in-desc" placeholder="Consultation on estate settlement"></label>
+      <div class="full row"><button class="primary" type="submit">Save</button><button type="button" id="in-cancel">Cancel</button></div>
+    </form>
+    <p class="note">Notarial fees come in automatically from the notarial register. Client payments come in from each client's billing. Record everything else here.</p>
+    <div class="spread"><h3 id="in-list-h">Entries</h3></div>
+    <div class="panel table-wrap"><table>
+      <thead><tr><th>Date</th><th>Category</th><th>From</th><th>Amount</th><th></th></tr></thead>
+      <tbody id="in-body"></tbody>
+    </table></div>
+    <div class="spread"><h3>Report</h3></div>
+    <div class="panel card" style="grid-template-columns:1fr">
+      <div class="note" id="rp-desc"></div>
+      <div class="row"><button class="primary" id="rp-word">Download report (Word)</button></div>
+      <div id="rp-sum" style="white-space:pre-wrap;font:15px/1.6 var(--f-display)" hidden></div>
+    </div>
+  </section>
+
+  <!-- NOTARIAL -->
+  <section data-view="notarial" hidden>
+    <div class="spread"><h2>Notarial register</h2><button class="primary" id="nt-new">New entry</button></div>
+    <form class="panel card" id="nt-form" hidden>
+      <label>Doc. No.<input id="nt-doc" type="number" min="1" required></label>
+      <label>Page No.<input id="nt-page" type="number" min="1" required></label>
+      <label>Book No.<input id="nt-book" required></label>
+      <label>Series of<input id="nt-series" type="number" required></label>
+      <label>Date<input id="nt-date" type="date" required></label>
+      <label>Notarial act<select id="nt-act"><option>Acknowledgment</option><option>Jurat</option><option>Oath / Affirmation</option><option>Signature witnessing</option><option>Copy certification</option></select></label>
+      <label class="full">Title of document<input id="nt-title" required placeholder="Deed of Absolute Sale"></label>
+      <label class="full">Principal(s), address<input id="nt-principal" required></label>
+      <label>Competent evidence of identity<input id="nt-id" placeholder="Driver's license, exp. 2029"></label>
+      <label>Fee (₱)<input id="nt-fee" type="number" min="0" step="1"></label>
+      <div class="full row"><button class="primary" type="submit">Save entry</button><button type="button" id="nt-cancel">Cancel</button></div>
+    </form>
+    <div class="row"><label style="flex:1">Search<input id="nt-q" placeholder="Name, document, Doc. No."></label></div>
+    <div class="panel table-wrap"><table>
+      <thead><tr><th>Doc/Page/Book</th><th>Date</th><th>Act</th><th>Document</th><th>Principal</th><th>Fee</th><th></th></tr></thead>
+      <tbody id="nt-body"></tbody>
+    </table></div>
+    <div class="spread"><span class="note" id="nt-total"></span><button id="nt-export">Save register as spreadsheet (CSV)</button></div>
+  </section>
+
+  <!-- BACKUP -->
+  <section data-view="backup" hidden>
+    <h2>Backup &amp; restore</h2>
+    <p class="note">Everything in this app is stored only on this phone, in this browser. Nothing is sent anywhere. If the phone is lost, reset, or the browser data is cleared, the records are gone unless you have a backup file.</p>
+    <div class="panel contact" id="bk-status"></div>
+    <div class="panel card" style="grid-template-columns:1fr">
+      <label class="check"><input type="checkbox" id="bk-files" checked> Include uploaded case files (bigger backup)</label>
+      <div class="row"><button class="primary" id="bk-save">Download backup now</button></div>
+      <div class="note">Save the backup file to Google Drive or email it to yourself. Do this at least once a week.</div>
+    </div>
+    <div class="panel card" style="grid-template-columns:1fr">
+      <label>Restore from a backup file<input id="bk-load" type="file" accept=".json,application/json"></label>
+      <div class="note" id="bk-note">Restoring adds everything from the backup. Entries already here that are also in the backup are replaced with the backup's version.</div>
+      <div class="row" id="bk-confirm" hidden><button class="primary" id="bk-go">Restore now</button><button id="bk-cancel">Cancel</button></div>
+    </div>
+    <h3>Good habits</h3>
+    <ul class="panel tips">
+      <li>Back up every Friday, and before changing or resetting your phone.</li>
+      <li>To move to a new phone, open the app there and restore your latest backup.</li>
+      <li>On iPhone, open the app from its home-screen icon so Safari keeps the data.</li>
+      <li>Keep the phone locked with a PIN. Client records and IDs are stored here.</li>
+    </ul>
+  </section>
+</div></main>
+
+<nav class="tabs" aria-label="Sections"><div class="wrap">
+  <a href="#home" data-tab="home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7v9H4z"/><path d="M10 20v-5h4v5"/></svg>Shortcuts</a>
+  <a href="#calendar" data-tab="calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Calendar</a>
+  <span class="gap"></span>
+  <a href="#clients" data-tab="clients"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>Records</a>
+  <a href="#income" data-tab="income"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6.5 9.5v5M17.5 9.5v5"/></svg>Income</a>
+  <button class="fab" id="fab" aria-label="Add new"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+</div></nav>
+<div class="sheet" id="sheet" hidden><div class="inner">
+  <div class="spread"><h2>Add new</h2><button class="ghost" id="sheet-x">Close</button></div>
+  <div class="grid">
+    <button data-add="hearing"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4l6 6M11.5 6.5l6 6M13 5l-7 7 3 3 7-7M7.5 13.5L3 18l3 3 4.5-4.5M4 21h9"/></svg>Hearing</button>
+    <button data-add="meeting"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/><circle cx="15.5" cy="14.5" r="1.6"/><path d="M12.8 18.5c.4-1.5 1.5-2.3 2.7-2.3s2.3.8 2.7 2.3"/></svg>Client meeting</button>
+    <button data-add="deadline"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="13" height="13" rx="2"/><path d="M3.5 9.5h13M7 3v4M13 3v4"/><circle cx="17" cy="17" r="4"/><path d="M17 15.3V17l1.2 1"/></svg>Pleading deadline</button>
+    <button data-add="client"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c.8-3.6 3.2-5.5 6-5.5s5.2 1.9 6 5.5"/><path d="M16 4.8a3.4 3.4 0 010 6.4M18 14.8c1.6.8 2.6 2.6 3 5.2"/></svg>Client</button>
+    <button data-add="income"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6.5 9.5v5M17.5 9.5v5"/></svg>Income</button>
+    <button data-add="notarial"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="10" r="5.5"/><path d="M9 15l-1.5 6L12 19l4.5 2L15 15"/></svg>Notarial entry</button>
+  </div>
+</div></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const pad=n=>String(n).padStart(2,"0");
+function manilaNow(){const d=new Date(Date.now()+8*3600e3);return d}
+function todayISO(){const d=manilaNow();return d.getUTCFullYear()+"-"+pad(d.getUTCMonth()+1)+"-"+pad(d.getUTCDate())}
+function addDays(iso,n){const d=new Date(iso+"T00:00:00Z");d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)}
+const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+function fmtDate(iso){if(!iso)return"";const d=new Date(iso+"T00:00:00Z");return MON[d.getUTCMonth()]+" "+d.getUTCDate()}
+function dow(iso){return DOW[new Date(iso+"T00:00:00Z").getUTCDay()]}
+function fmtTime(t){if(!t)return"";let[h,m]=t.split(":").map(Number);const ap=h<12?"AM":"PM";h=h%12||12;return h+":"+pad(m)+" "+ap}
+function daysUntil(iso){return Math.round((new Date(iso+"T00:00:00Z")-new Date(todayISO()+"T00:00:00Z"))/864e5)}
+function toast(msg){const t=$("#toast");t.textContent=msg;t.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>t.hidden=true,2600)}
+(function(){const d=new Date(todayISO()+"T00:00:00Z");$("#today-label").textContent=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][d.getUTCDay()]+", "+["January","February","March","April","May","June","July","August","September","October","November","December"][d.getUTCMonth()]+" "+d.getUTCDate()+", "+d.getUTCFullYear();
+  const h=manilaNow().getUTCHours();$("#greet").textContent=(h<12?"Good morning":h<18?"Good afternoon":"Good evening")+", Atty. Palma!"})();
+
+/* ---------- routing ---------- */
+const VIEWS=["home","today","calendar","drafting","clients","income","notarial","backup","notes","timebox","sync"];
+function route(){const v=VIEWS.includes(location.hash.slice(1))?location.hash.slice(1):"home";
+  $$("section[data-view]").forEach(s=>s.hidden=s.dataset.view!==v);
+  $$("nav.tabs a").forEach(a=>{if(a.dataset.tab===v)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
+  window.scrollTo(0,0)}
+window.addEventListener("hashchange",route);route();
+document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g)location.hash=g.dataset.go});
+
+/* ---------- store: on this device (IndexedDB) ---------- */
+let items=[], ready=false, idb=null;
+const byKind=k=>items.filter(i=>i.kind===k);
+function setSync(msg){const b=$("#sync");b.textContent=msg||"";b.hidden=!msg}
+function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open("palma-practice-desk",1);
+  r.onupgradeneeded=()=>{const d=r.result;if(!d.objectStoreNames.contains("records"))d.createObjectStore("records",{keyPath:"id"});if(!d.objectStoreNames.contains("blobs"))d.createObjectStore("blobs")};
+  r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+function tx(store,mode,fn){return new Promise((res,rej)=>{const t=idb.transaction(store,mode);const st=t.objectStore(store);let out;const r=fn(st);if(r)r.onsuccess=()=>{out=r.result};t.oncomplete=()=>res(out);t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error)})}
+async function save(id,data,opt){if(!idb){toast("Storage isn't available in this browser.");return false}
+  const rec=Object.assign({},data,{id,updatedAt:new Date().toISOString()});
+  try{await tx("records","readwrite",st=>st.put(rec));const i=items.findIndex(x=>x.id===id);if(i>=0)items[i]=rec;else items.push(rec);
+    cloudPut(rec);if(/^(event|task|plan)$/.test(rec.kind))gcLater();if(!(opt&&opt.quiet))render();return true}
+  catch(e){toast(e&&e.name==="QuotaExceededError"?"Phone storage for this app is full. Delete old files or back up and clear.":"Not saved: "+(e&&e.message||"try again"));return false}}
+async function del(id,opt){if(!idb)return;const dk=(items.find(x=>x.id===id)||{}).kind||"";try{await tx("records","readwrite",st=>st.delete(id));items=items.filter(x=>x.id!==id);if(/^(event|task|plan)$/.test(dk))gcLater();cloudDel(id);if(!(opt&&opt.quiet)){render();toast("Deleted")}}catch(e){toast("Not deleted: "+(e.message||""))}}
+const putBlob=(k,b)=>tx("blobs","readwrite",st=>st.put(b,k));
+const getBlob=k=>tx("blobs","readonly",st=>st.get(k));
+const delBlob=k=>tx("blobs","readwrite",st=>st.delete(k)).catch(()=>{});
+const newId=p=>p+"_"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+
+(async()=>{
+  await new Promise(r=>setTimeout(r,0));
+  try{idb=await openDB();items=(await tx("records","readonly",st=>st.getAll()))||[]}
+  catch(e){setSync("This browser is blocking storage (private mode?). Open the app in a normal browser window to save entries.")}
+  ready=true;render();backupNudge();
+  try{if(navigator.storage&&navigator.storage.persist)await navigator.storage.persist()}catch(e){}
+  renderBackup();
+  cloudStart();
+})();
+
+/* ---------- render ---------- */
+const TYPE_PILL=t=>t==="Client meeting"?"pill plain":"pill";
+function eventRow(ev,actions){
+  const d=daysUntil(ev.date);
+  const flag=d===0?'<span class="pill urgent">Today</span>':d===1?'<span class="pill warn">Tomorrow</span>':'';
+  return `<div class="item"><div class="when"><b>${fmtDate(ev.date)}</b>${dow(ev.date)}<br>${fmtTime(ev.time)}</div>
+  <div><div class="row" style="gap:6px"><span class="${TYPE_PILL(ev.type)}">${esc(ev.type)}</span>${flag}</div>
+  <div class="ttl">${esc(ev.title)}</div>
+  <div class="meta">${[ev.caseNo&&`<span class="mono">${esc(ev.caseNo)}</span>`,esc(ev.court),ev.client&&("Client: "+esc(ev.client))].filter(Boolean).join(" · ")}</div>
+  ${ev.notes?`<div class="meta">${esc(ev.notes)}</div>`:""}</div>
+  <div class="icon-btns">${actions?`<button data-ics="${ev.id}">Phone</button><button data-edit-ev="${ev.id}">Edit</button><button class="danger" data-del="${ev.id}">Delete</button>`:`<button data-ics="${ev.id}">Phone</button>`}</div></div>`}
+function emptyBox(t,s){return `<div class="empty"><strong>${t}</strong>${s}</div>`}
+function dueFlag(t){if(t.stage==="Filed")return'<span class="pill plain">Filed</span>';const d=daysUntil(t.due);
+  if(d<0)return`<span class="pill urgent">${-d} day${d===-1?"":"s"} late</span>`;if(d===0)return'<span class="pill urgent">Due today</span>';if(d<=3)return`<span class="pill warn">${d} day${d===1?"":"s"} left</span>`;return`<span class="pill plain">${d} days left</span>`}
+const sortEv=(a,b)=>(a.date+(a.time||"")).localeCompare(b.date+(b.time||""));
+let evFilter="up";
+function render(){
+  const T=todayISO(), evs=byKind("event").sort(sortEv), tks=byKind("task"), nts=byKind("notarial");
+  const wk=evs.filter(e=>e.date>=T&&e.date<=addDays(T,7));
+  const hot=tks.filter(t=>t.stage!=="Filed"&&daysUntil(t.due)<=3).sort((a,b)=>a.due.localeCompare(b.due));
+  const ym=T.slice(0,7);
+  $("#s-hear").textContent=wk.length;$("#s-due").textContent=hot.length;$("#s-not").textContent=nts.filter(n=>(n.date||"").startsWith(ym)).length;
+  $("#today-events").innerHTML=wk.length?wk.map(e=>eventRow(e,false)).join(""):emptyBox(ready?"Nothing set for the next 7 days":"Loading your docket…","Add a hearing or client meeting under Hearings.");
+  $("#today-tasks").innerHTML=hot.length?hot.map(t=>`<div class="item"><div class="when"><b>${fmtDate(t.due)}</b>${dow(t.due)}</div><div><div class="ttl">${esc(t.title)}</div><div class="meta">${esc(t.matter)}</div></div><div>${dueFlag(t)}</div></div>`).join(""):emptyBox("No filing due in the next 3 days","Deadlines appear here as they get close.");
+  const list=evFilter==="up"?evs.filter(e=>e.date>=T):evs.filter(e=>e.date<T).reverse();
+  $("#ev-list").innerHTML=list.length?list.map(e=>eventRow(e,true)).join(""):emptyBox(evFilter==="up"?"No upcoming hearings yet":"No past entries","Tap Add entry. Each one can go straight to your phone calendar.");
+  const stages=["To draft","Drafting","For review","Filed"];
+  $("#board").innerHTML=stages.map(s=>{const cs=tks.filter(t=>t.stage===s).sort((a,b)=>a.due.localeCompare(b.due));
+    return `<div class="col"><h3>${s} · ${cs.length}</h3>${cs.length?cs.map(t=>`<div class="panel task"><div class="spread"><span class="when">${fmtDate(t.due)}</span>${dueFlag(t)}</div><div class="ttl">${esc(t.title)}</div>${t.matter?`<div class="meta">${esc(t.matter)}</div>`:""}${t.basis?`<div class="meta">${esc(t.basis)}</div>`:""}
+    <div class="row" style="gap:4px">${s!=="Filed"?`<button data-move="${t.id}">Move to ${stages[stages.indexOf(s)+1]}</button>`:""}<button data-edit-tk="${t.id}">Edit</button><button class="danger" data-del="${t.id}">Delete</button></div></div>`).join(""):`<div class="note" style="padding:4px 2px">None</div>`}</div>`}).join("");
+  const q=($("#nt-q").value||"").toLowerCase();
+  const rows=nts.filter(n=>!q||[n.title,n.principal,n.docNo,n.act].join(" ").toLowerCase().includes(q)).sort((a,b)=>(b.series-a.series)||(b.docNo-a.docNo));
+  $("#nt-body").innerHTML=rows.length?rows.map(n=>`<tr><td class="num">${esc(n.docNo)} / ${esc(n.pageNo)} / ${esc(n.bookNo)}<br><span class="note">Series of ${esc(n.series)}</span></td><td class="num">${fmtDate(n.date)}</td><td>${esc(n.act)}</td><td>${esc(n.title)}</td><td>${esc(n.principal)}${n.idEv?`<div class="note">${esc(n.idEv)}</div>`:""}</td><td class="num">${n.fee?"₱"+Number(n.fee).toLocaleString("en-PH"):""}</td><td><button class="danger" data-del="${n.id}">Delete</button></td></tr>`).join(""):`<tr><td colspan="7">${emptyBox("Register is empty","Each entry gets the next Doc. No. automatically. Page and Book carry over from your last entry.")}</td></tr>`;
+  const fees=nts.filter(n=>(n.date||"").startsWith(ym)).reduce((s,n)=>s+(+n.fee||0),0);
+  $("#nt-total").textContent=nts.length?`${nts.length} entries in all · ₱${fees.toLocaleString("en-PH")} in fees this month`:"";
+  $("#s-ar").textContent=peso(byKind("client").reduce((s,c)=>s+Math.max(0,balanceOf(c.id)),0),true);
+  renderClients();
+  renderIncome();
+  if(location.hash==="#backup")renderBackup();
+  renderHome();
+  renderTimebox();
+  if(location.hash==="#sync")renderSync();
+}
+
+/* ---------- forms ---------- */
+function toggleForm(id,show){$(id).hidden=!show;if(show)$(id).querySelector("input,select").focus()}
+let editEv=null, editTk=null;
+$("#ev-new").onclick=()=>{editEv=null;$("#ev-form").reset();$("#ev-date").value=todayISO();toggleForm("#ev-form",true)};
+$("#ev-cancel").onclick=()=>toggleForm("#ev-form",false);
+$("#ev-form").onsubmit=async e=>{e.preventDefault();const id=editEv||newId("ev");
+  const ok=await save(id,{kind:"event",type:$("#ev-type").value,caseNo:$("#ev-caseno").value.trim(),title:$("#ev-title").value.trim(),court:$("#ev-court").value.trim(),client:$("#ev-client").value.trim(),date:$("#ev-date").value,time:$("#ev-time").value,notes:$("#ev-notes").value.trim()});
+  if(ok){toggleForm("#ev-form",false);toast("Saved. Tap Phone to add it to your calendar.")}};
+$("#ev-filter").onclick=e=>{const b=e.target.closest("[data-f]");if(!b)return;evFilter=b.dataset.f;$$("#ev-filter .chip").forEach(c=>c.setAttribute("aria-pressed",c===b));render()};
+$("#tk-new").onclick=()=>{editTk=null;$("#tk-form").reset();$("#tk-due").value=addDays(todayISO(),10);toggleForm("#tk-form",true)};
+$("#tk-cancel").onclick=()=>toggleForm("#tk-form",false);
+$("#tk-form").onsubmit=async e=>{e.preventDefault();const id=editTk||newId("tk");
+  const ok=await save(id,{kind:"task",title:$("#tk-title").value.trim(),matter:$("#tk-matter").value.trim(),due:$("#tk-due").value,stage:$("#tk-stage").value,basis:$("#tk-basis").value.trim()});
+  if(ok){toggleForm("#tk-form",false);toast("Saved")}};
+$("#nt-new").onclick=()=>{const nts=byKind("notarial"),yr=+todayISO().slice(0,4);const last=nts.filter(n=>+n.series===yr).sort((a,b)=>b.docNo-a.docNo)[0];
+  $("#nt-form").reset();$("#nt-doc").value=last?(+last.docNo+1):1;$("#nt-page").value=last?last.pageNo:1;$("#nt-book").value=last?last.bookNo:"I";$("#nt-series").value=yr;$("#nt-date").value=todayISO();toggleForm("#nt-form",true)};
+$("#nt-cancel").onclick=()=>toggleForm("#nt-form",false);
+$("#nt-form").onsubmit=async e=>{e.preventDefault();const yr=+$("#nt-series").value,doc=+$("#nt-doc").value;
+  if(byKind("notarial").some(n=>+n.series===yr&&+n.docNo===doc)){toast(`Doc. No. ${doc}, Series of ${yr} is already used.`);return}
+  const ok=await save(newId("nt"),{kind:"notarial",docNo:doc,pageNo:+$("#nt-page").value,bookNo:$("#nt-book").value.trim(),series:yr,date:$("#nt-date").value,act:$("#nt-act").value,title:$("#nt-title").value.trim(),principal:$("#nt-principal").value.trim(),idEv:$("#nt-id").value.trim(),fee:+$("#nt-fee").value||0});
+  if(ok){toggleForm("#nt-form",false);toast(`Entered as Doc. No. ${doc}`)}};
+$("#nt-q").oninput=render;
+
+/* row actions */
+const confirmDel=new Set();
+document.addEventListener("click",async e=>{
+  const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.del){const id=b.dataset.del;if(!confirmDel.has(id)){confirmDel.add(id);b.textContent="Tap again to delete";setTimeout(()=>{confirmDel.delete(id);if(b.isConnected)b.textContent="Delete"},3000);return}confirmDel.delete(id);del(id)}
+  if(b.dataset.ics){const ev=items.find(i=>i.id===b.dataset.ics);if(ev)saveFile(slug(ev.title)+".ics",icsFor([ev]),"text/calendar")}
+  if(b.dataset.editEv){const ev=items.find(i=>i.id===b.dataset.editEv);editEv=ev.id;$("#ev-type").value=ev.type;$("#ev-caseno").value=ev.caseNo||"";$("#ev-title").value=ev.title;$("#ev-court").value=ev.court||"";$("#ev-client").value=ev.client||"";$("#ev-date").value=ev.date;$("#ev-time").value=ev.time||"";$("#ev-notes").value=ev.notes||"";toggleForm("#ev-form",true);window.scrollTo(0,0)}
+  if(b.dataset.editTk){const t=items.find(i=>i.id===b.dataset.editTk);editTk=t.id;$("#tk-title").value=t.title;$("#tk-matter").value=t.matter||"";$("#tk-due").value=t.due;$("#tk-stage").value=t.stage;$("#tk-basis").value=t.basis||"";toggleForm("#tk-form",true);window.scrollTo(0,0)}
+  if(b.dataset.move){const t=items.find(i=>i.id===b.dataset.move),st=["To draft","Drafting","For review","Filed"];const{id,...rest}=t;const nx=st[st.indexOf(t.stage)+1];await save(t.id,Object.assign(rest,{stage:nx},nx==="Filed"?{filedOn:todayISO()}:{}))}
+});
+
+/* ---------- clients, billing, files, research ---------- */
+function peso(n,short){n=+n||0;return "₱"+n.toLocaleString("en-PH",short?{maximumFractionDigits:0}:{minimumFractionDigits:2,maximumFractionDigits:2})}
+const isPay=b=>b.type==="Payment received";
+function balanceOf(cid){return byKind("bill").filter(b=>b.clientId===cid).reduce((s,b)=>s+(isPay(b)?-b.amount:+b.amount),0)}
+let curClient=null, editCl=null, editCs=null;
+const clientById=id=>items.find(i=>i.id===id&&i.kind==="client");
+function caseLabel(c){return c?(c.title+(c.caseNo?" ("+c.caseNo+")":"")):"General"}
+function openClient(id){curClient=id;$("#cs-form").hidden=true;$("#bl-form").hidden=true;renderClients();window.scrollTo(0,0)}
+function fileKind(f){const t=f.contentType||"";return t.includes("pdf")?"pdf":t.startsWith("image/")?"img":"txt"}
+function fmtSize(b){return b>1048576?(b/1048576).toFixed(1)+" MB":Math.max(1,Math.round(b/1024))+" KB"}
+
+function renderClients(){
+  const clients=byKind("client").sort((a,b)=>a.name.localeCompare(b.name));
+  $("#client-names").innerHTML=clients.map(c=>`<option value="${esc(c.name)}">`).join("");
+  const c=curClient&&clientById(curClient);
+  if(curClient&&!c&&ready)curClient=null;
+  $("#cl-index").hidden=!!c;$("#cl-detail").hidden=!c;
+  if(!c){
+    const q=($("#cl-q").value||"").toLowerCase();
+    const rows=clients.filter(x=>!q||[x.name,x.phone,x.email,(x.cases||[]).map(k=>k.title+" "+k.caseNo).join(" ")].join(" ").toLowerCase().includes(q));
+    $("#cl-list").innerHTML=rows.length?rows.map(x=>{const bal=balanceOf(x.id),active=(x.cases||[]).filter(k=>k.status!=="Closed").length;
+      return `<div class="item" style="grid-template-columns:1fr auto"><div><div class="ttl">${esc(x.name)}</div><div class="meta">${[x.phone,active?active+" active case"+(active>1?"s":""):"No active case"].filter(Boolean).map(esc).join(" · ")}</div></div>
+      <div class="icon-btns">${bal>0?`<span class="pill urgent">${peso(bal,true)} due</span>`:`<span class="pill plain">Paid up</span>`}<button data-client="${x.id}">Open</button></div></div>`}).join(""):emptyBox(ready?(q?"No client matches":"No clients yet"):"Loading clients…","Add a client to keep their contact details, cases, billing and files together.");
+    return}
+  const cases=c.cases||[];
+  $("#cl-head").innerHTML=`<div class="spread"><h2>${esc(c.name)}</h2><button data-edit-cl="${c.id}">Edit</button></div>
+    ${c.phone?`<div class="line"><span class="mono">${esc(c.phone)}</span><button data-copy="${esc(c.phone)}">Copy</button></div>`:""}
+    ${c.email?`<div class="line"><span>${esc(c.email)}</span><button data-copy="${esc(c.email)}">Copy</button></div>`:""}
+    ${c.address?`<div class="meta">${esc(c.address)}</div>`:""}
+    ${c.fee?`<div class="meta"><b>Fee arrangement:</b> ${esc(c.fee)}</div>`:""}
+    ${c.notes?`<div class="meta">${esc(c.notes)}</div>`:""}
+    ${!c.phone&&!c.email?`<div class="note">No contact details yet. Tap Edit to add them.</div>`:""}`;
+  $("#cs-list").innerHTML=cases.length?cases.map(k=>`<div class="item" style="grid-template-columns:1fr auto"><div><div class="ttl">${esc(k.title)}</div><div class="meta">${[k.caseNo&&`<span class="mono">${esc(k.caseNo)}</span>`,esc(k.court)].filter(Boolean).join(" · ")}</div></div>
+    <div class="icon-btns"><span class="${k.status==="Closed"||k.status==="Decided"?"pill plain":"pill"}">${esc(k.status)}</span><button data-edit-cs="${k.id}">Edit</button></div></div>`).join(""):emptyBox("No cases yet","Add the case title and number. Files and research are filed by case.");
+  const opts=`<option value="">General / no specific case</option>`+cases.map(k=>`<option value="${k.id}">${esc(caseLabel(k))}</option>`).join("");
+  for(const s of ["#fl-case"]){const v=$(s).value;$(s).innerHTML=opts;if([...$(s).options].some(o=>o.value===v))$(s).value=v}
+  const bills=byKind("bill").filter(b=>b.clientId===c.id).sort((a,b)=>a.date.localeCompare(b.date));
+  $("#bl-body").innerHTML=bills.length?bills.map(b=>`<tr><td class="num">${fmtDate(b.date)}<br><span class="note">${b.date.slice(0,4)}</span></td><td>${esc(b.type)}${b.desc?`<div class="note">${esc(b.desc)}</div>`:""}${b.orNo?`<div class="note mono">O.R. ${esc(b.orNo)}</div>`:""}</td><td class="num">${isPay(b)?"":peso(b.amount)}</td><td class="num">${isPay(b)?peso(b.amount):""}</td><td><button class="danger" data-del="${b.id}">Delete</button></td></tr>`).join(""):`<tr><td colspan="5">${emptyBox("No billing entries","Record fees as you charge them and payments as they come in.")}</td></tr>`;
+  const bal=balanceOf(c.id);$("#bl-bal").textContent=peso(Math.abs(bal))+(bal<0?" advance":"");$("#bl-bal").classList.toggle("owe",bal>0);
+  const files=byKind("file").filter(f=>f.clientId===c.id).sort((a,b)=>(b.uploadedAt||"").localeCompare(a.uploadedAt||""));
+  $("#fl-list").innerHTML=files.length?files.map(f=>{const k=cases.find(x=>x.id===f.caseId);
+    return `<div class="file-row"><span class="ftype">${fileKind(f)}</span><div><button class="ghost flink" style="padding:0;text-align:left" data-viewfile="${f.id}">${esc(f.name)}</button><div class="note">${esc(caseLabel(k))} · ${fmtSize(f.size||0)} · ${fmtDate((f.uploadedAt||"").slice(0,10))}</div></div><button class="danger" data-delfile="${f.id}">Delete</button></div>`}).join(""):emptyBox("No files yet","Upload pleadings, orders, evidence and IDs here, filed under each case.");
+  {const v=$("#rq-case").value;$("#rq-case").innerHTML=opts;if([...$("#rq-case").options].some(o=>o.value===v))$("#rq-case").value=v;loadRqNotes()}
+  const evs=byKind("event").filter(e=>e.client&&e.client.trim().toLowerCase()===c.name.trim().toLowerCase()&&e.date>=todayISO()).sort(sortEv);
+  $("#cl-ev").innerHTML=evs.length?evs.map(e=>eventRow(e,false)).join(""):emptyBox("No upcoming hearings","Hearings appear here when the Client field matches this name.");
+}
+
+$("#cl-new").onclick=()=>{editCl=null;$("#cl-form").reset();toggleForm("#cl-form",true)};
+$("#cl-cancel").onclick=()=>toggleForm("#cl-form",false);
+$("#cl-back").onclick=()=>{curClient=null;renderClients()};
+$("#cl-q").oninput=renderClients;
+$("#cl-form").onsubmit=async e=>{e.preventDefault();const id=editCl||newId("cl");const old=clientById(id)||{};
+  const ok=await save(id,{kind:"client",name:$("#cl-name").value.trim(),phone:$("#cl-phone").value.trim(),email:$("#cl-email").value.trim(),address:$("#cl-address").value.trim(),fee:$("#cl-fee").value.trim(),rate:+$("#cl-rate").value||0,notes:$("#cl-notes").value.trim(),cases:old.cases||[]});
+  if(ok){toggleForm("#cl-form",false);toast("Client saved");if(!editCl)openClient(id)}};
+async function saveCases(c,cases){const{id,...rest}=c;return save(c.id,Object.assign(rest,{cases}))}
+$("#cs-new").onclick=()=>{editCs=null;$("#cs-form").reset();toggleForm("#cs-form",true)};
+$("#cs-cancel").onclick=()=>toggleForm("#cs-form",false);
+$("#cs-form").onsubmit=async e=>{e.preventDefault();const c=clientById(curClient);if(!c)return;
+  const k={id:editCs||newId("cs"),title:$("#cs-title").value.trim(),caseNo:$("#cs-no").value.trim(),court:$("#cs-court").value.trim(),status:$("#cs-status").value};
+  const cases=(c.cases||[]).filter(x=>x.id!==k.id).concat(k);if(await saveCases(c,cases)){toggleForm("#cs-form",false);toast("Case saved")}};
+$("#bl-new").onclick=()=>{$("#bl-form").reset();$("#bl-for-wrap").hidden=true;$("#bl-date").value=todayISO();toggleForm("#bl-form",true)};
+$("#bl-cancel").onclick=()=>toggleForm("#bl-form",false);
+$("#bl-form").onsubmit=async e=>{e.preventDefault();
+  const ok=await save(newId("bl"),{kind:"bill",clientId:curClient,type:$("#bl-type").value,date:$("#bl-date").value,amount:Math.round((+$("#bl-amt").value||0)*100)/100,orNo:$("#bl-or").value.trim(),desc:$("#bl-desc").value.trim(),forCat:$("#bl-type").value==="Payment received"?$("#bl-for").value:""});
+  if(ok){toggleForm("#bl-form",false);toast("Entry saved")}};
+$("#bl-type").onchange=()=>{$("#bl-for-wrap").hidden=$("#bl-type").value!=="Payment received"};
+$("#bl-soa").onclick=()=>{const c=clientById(curClient);if(!c)return;const bills=byKind("bill").filter(b=>b.clientId===c.id).sort((a,b)=>a.date.localeCompare(b.date));
+  if(!bills.length){toast("No billing entries yet.");return}
+  let run=0;const td='style="border:1px solid #999;padding:4pt 6pt"';
+  const rows=bills.map(b=>{run+=isPay(b)?-b.amount:+b.amount;return `<tr><td ${td}>${esc(b.date)}</td><td ${td}>${esc(b.type)}${b.desc?" – "+esc(b.desc):""}${b.orNo?" (O.R. "+esc(b.orNo)+")":""}</td><td ${td} align="right">${isPay(b)?"":peso(b.amount)}</td><td ${td} align="right">${isPay(b)?peso(b.amount):""}</td><td ${td} align="right">${peso(run)}</td></tr>`}).join("");
+  const html=`<html><head><meta charset="utf-8"><style>body{font-family:"Bookman Old Style",serif;font-size:11pt}</style></head><body>
+  <p align="center"><b>LINA LAW OFFICE</b><br>Muntinlupa City</p><p align="center"><b>STATEMENT OF ACCOUNT</b></p>
+  <p>Date: ${esc(todayISO())}<br>Client: <b>${esc(c.name)}</b>${c.address?"<br>"+esc(c.address):""}</p>
+  <table style="border-collapse:collapse;width:100%"><tr><th ${td}>Date</th><th ${td}>Particulars</th><th ${td}>Charges</th><th ${td}>Payments</th><th ${td}>Balance</th></tr>${rows}</table>
+  <p><b>Balance due: ${peso(Math.max(0,run))}</b></p><p>&nbsp;</p><p>ATTY. RENELIE PALMA</p></body></html>`;
+  saveFile("SOA-"+slug(c.name)+"-"+todayISO()+".doc",html,"application/msword")};
+
+$("#fl-input").onchange=async e=>{const fs=[...e.target.files];if(!fs.length)return;
+  if(!idb){toast("Storage isn't available in this browser.");return}
+  let done=0;for(const f of fs){
+    if(f.size>50*1048576){toast(f.name+": over 50 MB. Keep it in Google Drive instead.");continue}
+    $("#fl-note").textContent=`Saving ${f.name}…`;
+    try{const key=newId("blob");await putBlob(key,f);
+      if(await save(newId("fl"),{kind:"file",clientId:curClient,caseId:$("#fl-case").value,blobKey:key,name:f.name,size:f.size,contentType:f.type||"application/octet-stream",uploadedAt:new Date().toISOString()}))done++;else await delBlob(key)}
+    catch(err){toast(f.name+": "+(err&&err.name==="QuotaExceededError"?"phone storage for this app is full.":"couldn't be saved."))}}
+  e.target.value="";$("#fl-note").textContent=done?`${done} file${done>1?"s":""} saved on this phone.`:"PDF, photos and Word files. Large files fill phone storage quickly; keep originals elsewhere too."};
+
+
+document.addEventListener("click",async e=>{const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.client)openClient(b.dataset.client);
+  if(b.dataset.copy){try{await navigator.clipboard.writeText(b.dataset.copy);toast("Copied")}catch{toast(b.dataset.copy)}}
+  if(b.dataset.editCl){const c=clientById(b.dataset.editCl);editCl=c.id;$("#cl-name").value=c.name;$("#cl-phone").value=c.phone||"";$("#cl-email").value=c.email||"";$("#cl-address").value=c.address||"";$("#cl-fee").value=c.fee||"";$("#cl-rate").value=c.rate||"";$("#cl-notes").value=c.notes||"";toggleForm("#cl-form",true);window.scrollTo(0,0)}
+  if(b.dataset.editCs){const c=clientById(curClient),k=(c.cases||[]).find(x=>x.id===b.dataset.editCs);editCs=k.id;$("#cs-title").value=k.title;$("#cs-no").value=k.caseNo||"";$("#cs-court").value=k.court||"";$("#cs-status").value=k.status;toggleForm("#cs-form",true)}
+  if(b.dataset.delfile){const id=b.dataset.delfile;if(!confirmDel.has(id)){confirmDel.add(id);b.textContent="Tap again to delete";setTimeout(()=>{confirmDel.delete(id);if(b.isConnected)b.textContent="Delete"},3000);return}
+    confirmDel.delete(id);const f=items.find(i=>i.id===id);if(f&&f.blobKey)await delBlob(f.blobKey);await del(id)}
+  if(b.dataset.viewfile){const f=items.find(i=>i.id===b.dataset.viewfile);const blob=f&&await getBlob(f.blobKey);if(!blob){toast("This file is missing on this phone. Restore a backup that includes files.");return}
+    downloadBlob(f.name,blob,true)}
+});
+$("#cl-del").onclick=async function(){const c=clientById(curClient);if(!c)return;
+  if(this.dataset.armed!=="1"){this.dataset.armed="1";this.textContent="Tap again: deletes contacts, billing and files";setTimeout(()=>{this.dataset.armed="";this.textContent="Delete client and all records"},4000);return}
+  for(const r of items.filter(i=>i.clientId===c.id)){if(r.kind==="file"&&r.blobKey)await delBlob(r.blobKey);await del(r.id,{quiet:true})}
+  await del(c.id);curClient=null;this.dataset.armed="";this.textContent="Delete client and all records";renderClients()};
+
+/* ---------- income & reports ---------- */
+const CATS=["Appearance fee","Consultation fee","Drafting fee","Acceptance fee","Printing charges","Retainer – Brgy. Putatan","Retainer – NTC","Other income"];
+const ALLCATS=["Notarial fee"].concat(CATS);
+$("#in-cat").innerHTML=CATS.map(c=>`<option>${c}</option>`).join("");
+$("#bl-for").innerHTML=CATS.filter(c=>!c.startsWith("Retainer")).map(c=>`<option>${c}</option>`).join("");
+function incomeRows(){
+  const rows=[];
+  byKind("income").forEach(r=>rows.push({id:r.id,date:r.date,cat:r.cat,from:r.from,desc:r.desc,orNo:r.orNo,amount:+r.amount||0,src:"Recorded here",own:true}));
+  byKind("notarial").filter(n=>+n.fee>0).forEach(n=>rows.push({id:n.id,date:n.date,cat:"Notarial fee",from:n.principal,desc:n.act+": "+n.title+" (Doc. No. "+n.docNo+")",amount:+n.fee,src:"Notarial register"}));
+  byKind("bill").filter(isPay).forEach(b=>{const c=clientById(b.clientId);rows.push({id:b.id,date:b.date,cat:b.forCat||"Client payment",from:c?c.name:"Client",desc:b.desc,orNo:b.orNo,amount:+b.amount||0,src:"Client billing"})});
+  return rows.filter(r=>r.date)}
+let pKind="month", pAnchor=todayISO();
+function periodOf(kind,iso){const d=new Date(iso+"T00:00:00Z");let s,e,label;
+  if(kind==="week"){const off=(d.getUTCDay()+6)%7;s=addDays(iso,-off);e=addDays(s,6);label="Week of "+fmtDate(s)+" – "+fmtDate(e)+", "+e.slice(0,4)}
+  else if(kind==="month"){s=iso.slice(0,7)+"-01";const n=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,0));e=n.toISOString().slice(0,10);label=["January","February","March","April","May","June","July","August","September","October","November","December"][d.getUTCMonth()]+" "+d.getUTCFullYear()}
+  else{s=iso.slice(0,4)+"-01-01";e=iso.slice(0,4)+"-12-31";label="Year "+iso.slice(0,4)}
+  return{s,e,label}}
+function shift(kind,iso,dir){if(kind==="week")return addDays(iso,7*dir);const d=new Date(iso.slice(0,7)+"-01T00:00:00Z");
+  if(kind==="month")d.setUTCMonth(d.getUTCMonth()+dir);else d.setUTCFullYear(d.getUTCFullYear()+dir);return d.toISOString().slice(0,10)}
+function summarize(p){const rows=incomeRows().filter(r=>r.date>=p.s&&r.date<=p.e).sort((a,b)=>a.date.localeCompare(b.date));
+  const by={};rows.forEach(r=>by[r.cat]=(by[r.cat]||0)+r.amount);
+  const total=rows.reduce((s,r)=>s+r.amount,0);
+  const evs=byKind("event").filter(e=>e.date>=p.s&&e.date<=p.e&&e.date<=todayISO());
+  const act={hearings:evs.filter(e=>e.type!=="Client meeting").length,meetings:evs.filter(e=>e.type==="Client meeting").length,
+    notarial:byKind("notarial").filter(n=>n.date>=p.s&&n.date<=p.e).length,filed:byKind("task").filter(t=>t.filedOn&&t.filedOn>=p.s&&t.filedOn<=p.e).length,hours:Math.round(byKind("time").filter(t=>t.date>=p.s&&t.date<=p.e).reduce((a,t)=>a+(+t.minutes||0),0)/6)/10};
+  const recv=byKind("client").reduce((s,c)=>s+Math.max(0,balanceOf(c.id)),0);
+  return{rows,by,total,act,recv}}
+let rpSummary="", rpFor="";
+function renderIncome(){
+  const p=periodOf(pKind,pAnchor), cur=summarize(p), prev=summarize(periodOf(pKind,shift(pKind,pAnchor,-1)));
+  $("#in-label").textContent=p.label;
+  $("#in-total").textContent=peso(cur.total);
+  const diff=cur.total-prev.total, nm={week:"last week",month:"last month",year:"last year"}[pKind];
+  $("#in-delta").className="delta "+(diff>0?"up":diff<0?"down":"");
+  $("#in-delta").textContent=prev.total||cur.total?(diff===0?"Same as "+nm:(diff>0?"▲ ":"▼ ")+peso(Math.abs(diff))+(prev.total?" ("+Math.round(Math.abs(diff)/prev.total*100)+"%)":"")+" vs "+nm):"";
+  const cats=ALLCATS.concat(Object.keys(cur.by).filter(k=>!ALLCATS.includes(k))).filter(k=>cur.by[k]).sort((a,b)=>cur.by[b]-cur.by[a]);
+  const max=Math.max(1,...cats.map(k=>cur.by[k]));
+  $("#in-bars").innerHTML=cats.length?cats.map(k=>`<div class="bar"><span>${esc(k)}</span><span class="amt">${peso(cur.by[k])}</span><div class="track"><div class="fill" style="width:${Math.max(2,cur.by[k]/max*100)}%"></div></div></div>`).join(""):`<div class="empty"><strong>Nothing received in this period</strong>Record a fee or retainer below, or add notarial entries with their fees.</div>`;
+  $("#in-list-h").textContent=`Entries · ${cur.rows.length}`;
+  $("#in-body").innerHTML=cur.rows.length?cur.rows.slice().reverse().map(r=>`<tr><td class="num">${fmtDate(r.date)}</td><td>${esc(r.cat)}<div class="src">${esc(r.src)}${r.orNo?" · O.R. "+esc(r.orNo):""}</div></td><td>${esc(r.from)}${r.desc?`<div class="note">${esc(r.desc)}</div>`:""}</td><td class="num">${peso(r.amount)}</td><td>${r.own?`<button class="danger" data-del="${r.id}">Delete</button>`:""}</td></tr>`).join(""):`<tr><td colspan="5">${emptyBox("No entries","Income for this period will list here.")}</td></tr>`;
+  $("#s-inc").textContent=peso(summarize(periodOf("month",todayISO())).total,true);
+  $("#rp-desc").textContent=`${p.label}: ${peso(cur.total)} received from ${cur.rows.length} entr${cur.rows.length===1?"y":"ies"}; ${cur.act.hearings} hearing${cur.act.hearings===1?"":"s"}, ${cur.act.meetings} client meeting${cur.act.meetings===1?"":"s"}, ${cur.act.filed} pleading${cur.act.filed===1?"":"s"} filed, ${cur.act.notarial} notarial act${cur.act.notarial===1?"":"s"}.`;
+  const key=pKind+p.s;if(rpFor!==key){rpSummary="";rpFor=key;$("#rp-sum").hidden=true}
+}
+$("#in-kind").onclick=e=>{const b=e.target.closest("[data-k]");if(!b)return;pKind=b.dataset.k;$$("#in-kind button").forEach(x=>x.setAttribute("aria-pressed",x===b));renderIncome()};
+$("#in-prev").onclick=()=>{pAnchor=shift(pKind,pAnchor,-1);renderIncome()};
+$("#in-next").onclick=()=>{pAnchor=shift(pKind,pAnchor,1);renderIncome()};
+$("#in-now").onclick=()=>{pAnchor=todayISO();renderIncome()};
+function openIncome(cat){$("#in-form").reset();$("#in-cat").value=cat||CATS[0];$("#in-date").value=todayISO();
+  if(cat&&cat.startsWith("Retainer")){const last=byKind("income").filter(r=>r.cat===cat).sort((a,b)=>b.date.localeCompare(a.date))[0];
+    $("#in-from").value=cat.includes("Putatan")?"Barangay Putatan":"NTC";if(last)$("#in-amt").value=last.amount;
+    const m=periodOf("month",todayISO()).label;$("#in-desc").value="Monthly retainer, "+m}
+  toggleForm("#in-form",true)}
+$("#in-new").onclick=()=>openIncome();
+document.addEventListener("click",e=>{const b=e.target.closest("[data-quick]");if(b)openIncome(b.dataset.quick)});
+$("#in-cancel").onclick=()=>toggleForm("#in-form",false);
+$("#in-form").onsubmit=async e=>{e.preventDefault();
+  const ok=await save(newId("in"),{kind:"income",cat:$("#in-cat").value,date:$("#in-date").value,amount:Math.round((+$("#in-amt").value||0)*100)/100,orNo:$("#in-or").value.trim(),from:$("#in-from").value.trim(),desc:$("#in-desc").value.trim()});
+  if(ok){toggleForm("#in-form",false);toast("Income recorded")}};
+
+$("#rp-word").onclick=()=>{const p=periodOf(pKind,pAnchor),cur=summarize(p),prev=summarize(periodOf(pKind,shift(pKind,pAnchor,-1)));
+  const td='style="border:1px solid #999;padding:4pt 6pt"',tr=(a,b)=>`<tr><td ${td}>${a}</td><td ${td} align="right">${b}</td></tr>`;
+  const cats=Object.entries(cur.by).sort((a,b)=>b[1]-a[1]);
+  const title={week:"WEEKLY",month:"MONTHLY",year:"ANNUAL"}[pKind]+" PRACTICE REPORT";
+  let monthly="";if(pKind==="year"){const yr=p.s.slice(0,4);monthly=`<p><b>Income by month</b></p><table style="border-collapse:collapse;width:60%">${["January","February","March","April","May","June","July","August","September","October","November","December"].map((m,i)=>tr(m,peso(summarize(periodOf("month",yr+"-"+pad(i+1)+"-01")).total))).join("")}</table>`}
+  const html=`<html><head><meta charset="utf-8"><style>body{font-family:"Bookman Old Style",serif;font-size:11pt}p{margin:0 0 8pt}</style></head><body>
+  <p align="center"><b>ATTY. RENELIE PALMA</b><br>Lina Law Office, Muntinlupa City</p>
+  <p align="center"><b>${title}</b><br>${esc(p.label)} (${p.s} to ${p.e})</p>
+  ${rpSummary?`<p><b>Summary</b></p><p style="text-align:justify">${esc(rpSummary).replace(/\n+/g,"</p><p style='text-align:justify'>")}</p>`:""}
+  <p><b>Income received</b></p><table style="border-collapse:collapse;width:70%">${cats.map(([k,v])=>tr(esc(k),peso(v))).join("")||tr("No income recorded","—")}${tr("<b>TOTAL</b>","<b>"+peso(cur.total)+"</b>")}${tr("Previous period",peso(prev.total))}</table>
+  ${monthly}
+  <p><b>Practice activity</b></p><table style="border-collapse:collapse;width:70%">${tr("Hearings and court settings",cur.act.hearings)}${tr("Client meetings",cur.act.meetings)}${tr("Pleadings filed",cur.act.filed)}${tr("Notarial acts",cur.act.notarial)}${tr("Billable hours logged",cur.act.hours)}${tr("Unpaid client balances (as of "+todayISO()+")",peso(cur.recv))}</table>
+  <p><b>Details of income received</b></p><table style="border-collapse:collapse;width:100%"><tr><th ${td}>Date</th><th ${td}>Category</th><th ${td}>From / Particulars</th><th ${td}>O.R. No.</th><th ${td}>Amount</th></tr>
+  ${cur.rows.map(r=>`<tr><td ${td}>${r.date}</td><td ${td}>${esc(r.cat)}</td><td ${td}>${esc(r.from)}${r.desc?" – "+esc(r.desc):""}</td><td ${td}>${esc(r.orNo||"")}</td><td ${td} align="right">${peso(r.amount)}</td></tr>`).join("")}</table>
+  <p>&nbsp;</p><p>Prepared on ${todayISO()}.</p></body></html>`;
+  saveFile(({week:"Weekly",month:"Monthly",year:"Annual"}[pKind])+"-Report-"+p.s+".doc",html,"application/msword")};
+
+/* ---------- files out ---------- */
+const slug=s=>(s||"file").replace(/[^\w\- ]+/g,"").trim().replace(/\s+/g,"-").slice(0,60)||"file";
+function downloadBlob(name,blob,open){const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;
+  if(open&&/^(application\/pdf|image\/|text\/)/.test(blob.type)){a.target="_blank";a.rel="noopener"}else a.download=name;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000)}
+function saveFile(name,data,type){downloadBlob(name,data instanceof Blob?data:new Blob([data],{type}));toast("Saved to your Downloads: "+name)}
+function icsDate(date,time){const[y,m,d]=date.split("-").map(Number);const[h,mi]=(time||"08:00").split(":").map(Number);const t=new Date(Date.UTC(y,m-1,d,h-8,mi));return t.toISOString().replace(/[-:]/g,"").slice(0,15)+"Z"}
+const icsEsc=s=>String(s||"").replace(/\\/g,"\\\\").replace(/[,;]/g,m=>"\\"+m).replace(/\n/g,"\\n");
+function icsFor(evs){const now=new Date().toISOString().replace(/[-:]/g,"").slice(0,15)+"Z";
+  const body=evs.map(ev=>{const st=icsDate(ev.date,ev.time);const en=new Date(new Date(st.replace(/(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/,"$1-$2-$3T$4:$5:$6Z")).getTime()+(ev.type==="Client meeting"?3600e3:2*3600e3)).toISOString().replace(/[-:]/g,"").slice(0,15)+"Z";
+    const sum=(ev.type==="Client meeting"?"Meeting: ":ev.type+": ")+ev.title;
+    const desc=[ev.caseNo,ev.client&&("Client: "+ev.client),ev.notes].filter(Boolean).join("\n");
+    return["BEGIN:VEVENT","UID:"+ev.id+"@palma-practice-desk","DTSTAMP:"+now,"DTSTART:"+st,"DTEND:"+en,"SUMMARY:"+icsEsc(sum),"LOCATION:"+icsEsc(ev.court),"DESCRIPTION:"+icsEsc(desc),
+      "BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:"+icsEsc(sum),"TRIGGER:-P1D","END:VALARM","BEGIN:VALARM","ACTION:DISPLAY","DESCRIPTION:"+icsEsc(sum),"TRIGGER:-PT2H","END:VALARM","END:VEVENT"].join("\r\n")}).join("\r\n");
+  return["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Palma Practice Desk//EN","CALSCALE:GREGORIAN",body,"END:VCALENDAR"].join("\r\n")}
+$("#ev-all").onclick=()=>{const up=byKind("event").filter(e=>e.date>=todayISO()).sort(sortEv);if(!up.length){toast("No upcoming entries to save.");return}saveFile("hearings-"+todayISO()+".ics",icsFor(up),"text/calendar")};
+$("#nt-export").onclick=()=>{const rows=byKind("notarial").sort((a,b)=>(a.series-b.series)||(a.docNo-b.docNo));if(!rows.length){toast("The register is empty.");return}
+  const q=v=>'"'+String(v??"").replace(/"/g,'""')+'"';
+  const csv=["Doc No,Page No,Book No,Series,Date,Notarial Act,Title of Document,Principal(s),Competent Evidence of Identity,Fee"].concat(rows.map(n=>[n.docNo,n.pageNo,n.bookNo,n.series,n.date,n.act,n.title,n.principal,n.idEv,n.fee].map(q).join(","))).join("\r\n");
+  saveFile("notarial-register-"+todayISO()+".csv","﻿"+csv,"text/csv")};
+
+/* ---------- research handoff (Anycase) ---------- */
+const rqId=()=>"rq_"+(curClient||"x")+"_"+($("#rq-case").value||"general");
+function loadRqNotes(){if(document.activeElement===$("#rq-notes"))return;const r=items.find(i=>i.id===rqId());$("#rq-notes").value=r?r.text||"":"";$("#rq-saved").textContent=r&&r.updatedAt?"Last saved "+fmtDate(r.updatedAt.slice(0,10)):""}
+$("#rq-case").onchange=loadRqNotes;
+let rqTimer=null;
+$("#rq-notes").oninput=()=>{$("#rq-saved").textContent="Saving…";clearTimeout(rqTimer);rqTimer=setTimeout(async()=>{
+  const ok=await save(rqId(),{kind:"rnotes",clientId:curClient,caseId:$("#rq-case").value,text:$("#rq-notes").value},{quiet:true});
+  $("#rq-saved").textContent=ok?"Saved":"Not saved"},700)};
+$("#rq-go").onclick=async()=>{const c=clientById(curClient);if(!c)return;const k=(c.cases||[]).find(x=>x.id===$("#rq-case").value);
+  const issues=$("#rq-issues").value.trim(),facts=$("#rq-facts").value.trim();
+  if(!issues){toast("Type the issues first.");return}
+  const q=`Philippine law research${k?" for "+caseLabel(k)+(k.court?", "+k.court:""):""}.
+Issues: ${issues}
+${facts?"Facts: "+facts+"\n":""}Please give: (1) the governing laws and rules with specific articles/sections; (2) the leading Supreme Court decisions with case name, G.R. No. and date, and the doctrine of each; (3) rulings that may be cited against our position; (4) procedural points and periods to watch.`;
+  try{await navigator.clipboard.writeText(q);toast("Question copied. Open Anycase and paste it.")}catch(e){$("#rq-facts").value=q;$("#rq-facts").select();toast("Copy the selected text, then open Anycase.")}};
+
+/* ---------- home, scratchpad, quick add ---------- */
+function setBadge(id,v,hot){const el=$("#"+id);if(!el)return;el.textContent=v?String(v):"";el.classList.toggle("hot",!!hot&&!!v)}
+function renderHome(){renderGcBanner();const T=todayISO(),wk=addDays(T,7),evs=byKind("event");
+  const todays=evs.filter(e=>e.date===T);setBadge("t-today",todays.length,true);
+  const open=byKind("task").filter(t=>t.stage!=="Filed"),late=open.filter(t=>daysUntil(t.due)<0).length,soon=open.filter(t=>daysUntil(t.due)<=3).length;
+  setBadge("t-dead",soon,late>0);
+  setBadge("t-hear",evs.filter(e=>e.type!=="Client meeting"&&e.date>=T&&e.date<=wk).length);
+  setBadge("t-meet",evs.filter(e=>e.type==="Client meeting"&&e.date>=T&&e.date<=wk).length);
+  setBadge("t-cli",byKind("client").length);
+  setBadge("t-ar",byKind("client").filter(c=>balanceOf(c.id)>0).length,true);
+  setBadge("t-files",byKind("file").length);
+  setBadge("t-not",byKind("notarial").filter(n=>(n.date||"").startsWith(T.slice(0,7))).length);
+  const plan=items.find(i=>i.id==="plan_"+T);setBadge("t-tb",plan?(plan.blocks||[]).filter(b=>!b.done).length:0);
+  setBadge("t-bt",items.find(i=>i.id==="timer_running")?"●":"",true);
+  setBadge("t-ft",focusRunning()?"●":"",true);
+  const d=daysSince(lsGet("lastBackup"));setBadge("t-bak",items.length&&(d===null||d>=7)?"!":"",true);
+  const next=evs.filter(e=>e.date>=T).sort(sortEv).slice(0,4);
+  $("#home-next").innerHTML=next.length?next.map(e=>`<div class="item"><div class="when"><b>${fmtDate(e.date)}</b>${dow(e.date)}<br>${fmtTime(e.time)}</div><div><span class="${e.type==="Client meeting"?"pill plain":"pill"}">${esc(e.type)}</span><div class="ttl">${esc(e.title)}</div><div class="meta">${esc(e.court||"")}</div></div></div>`).join(""):emptyBox(ready?"Nothing scheduled":"Loading…","Tap + to add a hearing or client meeting.");
+  const n=items.find(i=>i.id==="scratchpad");if(n&&document.activeElement!==$("#notes-text"))$("#notes-text").value=n.text||""}
+let noteTimer=null;
+$("#notes-text").oninput=()=>{$("#notes-saved").textContent="Saving…";clearTimeout(noteTimer);noteTimer=setTimeout(async()=>{
+  const v=$("#notes-text").value;const id="scratchpad";
+  const ok=await save(id,{kind:"note",text:v},{quiet:true});$("#notes-saved").textContent=ok?"Saved":"Not saved"},600)};
+document.addEventListener("click",e=>{
+  if(e.target.closest("[data-rep]")){setTimeout(()=>{const r=$("#rp-word");if(r)r.scrollIntoView({block:"center"})},80)}});
+$("#fab").onclick=()=>{$("#sheet").hidden=false};
+$("#sheet-x").onclick=()=>{$("#sheet").hidden=true};
+$("#sheet").onclick=e=>{if(e.target.id==="sheet")$("#sheet").hidden=true};
+$("#sheet").addEventListener("click",e=>{const b=e.target.closest("[data-add]");if(!b)return;$("#sheet").hidden=true;
+  const go={hearing:["calendar","#ev-new"],meeting:["calendar","#ev-new"],deadline:["drafting","#tk-new"],client:["clients","#cl-new"],income:["income","#in-new"],notarial:["notarial","#nt-new"]}[b.dataset.add];
+  if(go[0]==="clients"){curClient=null;renderClients()}
+  location.hash=go[0];setTimeout(()=>{$(go[1]).click();if(b.dataset.add==="meeting")$("#ev-type").value="Client meeting";window.scrollTo(0,0)},60)});
+
+/* ---------- time box ---------- */
+let tbTab="plan", plDate=todayISO();
+const toMin=t=>{if(!t)return 0;const[h,m]=t.split(":").map(Number);return h*60+m};
+const fromMin=m=>pad(Math.floor(m/60)%24)+":"+pad(m%60);
+function nowMin(){const d=manilaNow();return d.getUTCHours()*60+d.getUTCMinutes()}
+function fmtDur(min){min=Math.round(min);const h=Math.floor(min/60),m=min%60;return h?(h+"h"+(m?" "+m+"m":"")):m+"m"}
+function hms(sec){sec=Math.max(0,Math.floor(sec));const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),x=sec%60;return(h?h+":"+pad(m):m)+":"+pad(x)}
+function setTbTab(t){tbTab=t;$$("#tb-tabs button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.t===t));["plan","bill","focus"].forEach(k=>$("#tb-"+k).hidden=k!==t);renderTimebox()}
+$("#tb-tabs").onclick=e=>{const b=e.target.closest("[data-t]");if(b)setTbTab(b.dataset.t)};
+document.addEventListener("click",e=>{const t=e.target.closest("[data-tb]");if(t)setTimeout(()=>setTbTab(t.dataset.tb),0)});
+function planOf(d){return items.find(i=>i.id==="plan_"+d)||{blocks:[]}}
+async function savePlan(d,blocks){return save("plan_"+d,{kind:"plan",date:d,blocks},{quiet:true}).then(ok=>{renderTimebox();renderHome();return ok})}
+function renderTimebox(){
+  if(location.hash!=="#timebox")return;
+  if(tbTab==="plan")renderPlan();else if(tbTab==="bill")renderBill();else renderFocus();
+}
+function renderPlan(){
+  const d=plDate,T=todayISO();$("#pl-label").textContent=(d===T?"Today, ":"")+dow(d)+" "+fmtDate(d);
+  const fixed=byKind("event").filter(e=>e.date===d&&e.time).map(e=>({id:e.id,start:e.time,end:fromMin(toMin(e.time)+(e.type==="Client meeting"?60:120)),title:(e.type==="Client meeting"?"Meeting: ":e.type+": ")+e.title,cat:e.type==="Client meeting"?"Client work":"Court",client:e.client,fixed:true}));
+  const blocks=(planOf(d).blocks||[]).concat(fixed).sort((a,b)=>toMin(a.start)-toMin(b.start));
+  const nm=nowMin();
+  $("#pl-list").innerHTML=blocks.length?blocks.map(b=>{const now=d===T&&nm>=toMin(b.start)&&nm<toMin(b.end);const len=toMin(b.end)-toMin(b.start);
+    return `<div class="block${now?" now":""}${b.done?" done":""}${b.fixed?" fixed":""}"><div class="when"><b>${fmtTime(b.start)}</b>to ${fmtTime(b.end)}<br>${fmtDur(len)}</div>
+    <div><div class="row" style="gap:6px"><span class="pill${b.cat==="Personal / family"||b.cat==="PNP duty"?" plain":""}">${esc(b.cat)}</span>${now?'<span class="pill warn">Now</span>':""}</div><div class="ttl">${esc(b.title)}</div>${b.client?`<div class="meta">${esc(b.client)}</div>`:""}</div>
+    <div class="icon-btns">${b.fixed?"":`<button data-pl-focus="${b.id}">Focus</button><button data-pl-done="${b.id}">${b.done?"Undo":"Done"}</button><button class="danger" data-pl-del="${b.id}">Remove</button>`}</div></div>`}).join(""):emptyBox("No time blocks for this day","Add blocks below. Hearings and meetings with a time appear here automatically.");
+  const by={};blocks.forEach(b=>{by[b.cat]=(by[b.cat]||0)+toMin(b.end)-toMin(b.start)});
+  $("#pl-sum").textContent=blocks.length?"Planned: "+Object.entries(by).map(([k,v])=>k+" "+fmtDur(v)).join(" · "):"";
+  if(!$("#pl-start").value||document.activeElement!==$("#pl-start")){const last=blocks.length?Math.max(...blocks.map(b=>toMin(b.end))):Math.max(8*60,d===T?Math.ceil(nm/30)*30:8*60);
+    if(!$("#pl-title").value){$("#pl-start").value=fromMin(Math.min(last,23*60));$("#pl-end").value=fromMin(Math.min(last+60,23*60+59))}}
+}
+$("#pl-prev").onclick=()=>{plDate=addDays(plDate,-1);$("#pl-title").value="";renderPlan()};
+$("#pl-next").onclick=()=>{plDate=addDays(plDate,1);$("#pl-title").value="";renderPlan()};
+$("#pl-today").onclick=()=>{plDate=todayISO();$("#pl-title").value="";renderPlan()};
+$("#pl-form").onsubmit=async e=>{e.preventDefault();const st=$("#pl-start").value,en=$("#pl-end").value;
+  if(toMin(en)<=toMin(st)){toast("End time must be after the start time.");return}
+  const b={id:newId("tb"),start:st,end:en,title:$("#pl-title").value.trim(),cat:$("#pl-cat").value,client:$("#pl-client").value.trim(),done:false};
+  if(await savePlan(plDate,(planOf(plDate).blocks||[]).concat(b))){$("#pl-title").value="";$("#pl-client").value="";renderPlan();toast("Block added")}};
+$("#pl-copy").onclick=async()=>{const prev=(planOf(addDays(plDate,-1)).blocks||[]);if(!prev.length){toast("The day before has no time blocks.");return}
+  const cur=planOf(plDate).blocks||[];await savePlan(plDate,cur.concat(prev.map(b=>Object.assign({},b,{id:newId("tb"),done:false}))));toast(`Copied ${prev.length} block${prev.length>1?"s":""}`)};
+document.addEventListener("click",async e=>{const b=e.target.closest("button");if(!b)return;
+  const bl=planOf(plDate).blocks||[];
+  if(b.dataset.plDone)await savePlan(plDate,bl.map(x=>x.id===b.dataset.plDone?Object.assign({},x,{done:!x.done}):x));
+  if(b.dataset.plDel)await savePlan(plDate,bl.filter(x=>x.id!==b.dataset.plDel));
+  if(b.dataset.plFocus){const x=bl.find(y=>y.id===b.dataset.plFocus);if(!x)return;const left=plDate===todayISO()&&nowMin()>toMin(x.start)?toMin(x.end)-nowMin():toMin(x.end)-toMin(x.start);
+    $("#fc-label").value=x.title;setTbTab("focus");focusStart(Math.max(5,Math.min(180,left)))}
+});
+
+/* billable */
+function clientOpts(sel){const cs=byKind("client").sort((a,b)=>a.name.localeCompare(b.name));const v=$(sel).value;
+  $(sel).innerHTML=cs.length?cs.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join(""):`<option value="">Add a client first</option>`;if([...$(sel).options].some(o=>o.value===v))$(sel).value=v}
+function caseOpts(){const c=clientById($("#bt-client").value);const v=$("#bt-case").value;
+  $("#bt-case").innerHTML=`<option value="">General</option>`+((c&&c.cases)||[]).map(k=>`<option value="${k.id}">${esc(caseLabel(k))}</option>`).join("");if([...$("#bt-case").options].some(o=>o.value===v))$("#bt-case").value=v}
+$("#bt-client").onchange=()=>{caseOpts();const c=clientById($("#bt-client").value);$("#bt-rate").value=c&&c.rate?c.rate:(lsGet("lastRate")||"")};
+function running(){return items.find(i=>i.id==="timer_running")}
+function renderBill(){
+  if(document.activeElement!==$("#bt-client")){clientOpts("#bt-client");caseOpts()}
+  if(!$("#bt-rate").value){const c=clientById($("#bt-client").value);$("#bt-rate").value=c&&c.rate?c.rate:(lsGet("lastRate")||"")}
+  const r=running();$("#bt-form").hidden=!!r;
+  if(r){const c=clientById(r.clientId),k=c&&(c.cases||[]).find(x=>x.id===r.caseId);
+    $("#bt-running").hidden=false;
+    $("#bt-running").innerHTML=`<div class="spread"><span class="live">Timer running</span><span class="note">Started ${new Date(r.start).toLocaleTimeString("en-PH",{hour:"numeric",minute:"2-digit"})}</span></div>
+    <div class="clock small" id="bt-clock">${hms((Date.now()-new Date(r.start))/1000)}</div>
+    <div class="ttl">${esc(c?c.name:"Client")}</div><div class="meta">${esc(k?caseLabel(k):"General")}${r.desc?" · "+esc(r.desc):""}${r.rate?" · "+peso(r.rate,true)+"/hr":""}</div>
+    <div class="row"><button class="primary" id="bt-stop">Stop and save</button><button class="danger" id="bt-discard">Discard</button></div>`}
+  else $("#bt-running").hidden=true;
+  const times=byKind("time").sort((a,b)=>(b.end||b.date).localeCompare(a.end||a.date));
+  const ub={};times.filter(t=>!t.billed).forEach(t=>{(ub[t.clientId]=ub[t.clientId]||{min:0,amt:0,ids:[],from:t.date,to:t.date});const u=ub[t.clientId];u.min+=+t.minutes||0;u.amt+=(+t.minutes||0)/60*(+t.rate||0);u.ids.push(t.id);if(t.date<u.from)u.from=t.date;if(t.date>u.to)u.to=t.date});
+  const ks=Object.keys(ub);
+  $("#bt-unbilled").innerHTML=ks.length?ks.map(id=>{const c=clientById(id),u=ub[id];return `<div class="item" style="grid-template-columns:1fr auto"><div><div class="ttl">${esc(c?c.name:"Deleted client")}</div><div class="meta">${fmtDur(u.min)} · ${fmtDate(u.from)}${u.to!==u.from?" – "+fmtDate(u.to):""}</div></div>
+    <div class="icon-btns"><span class="pill">${peso(u.amt,true)}</span>${c?`<button data-bill-time="${id}">Add to billing</button>`:""}</div></div>`}).join(""):emptyBox("No unbilled time","Start the timer when you work on a client's matter.");
+  const wk=periodOf("week",todayISO());const wmin=times.filter(t=>t.date>=wk.s&&t.date<=wk.e).reduce((a,t)=>a+(+t.minutes||0),0);
+  $("#bt-week").textContent=wmin?"This week: "+fmtDur(wmin):"";
+  $("#bt-body").innerHTML=times.length?times.slice(0,25).map(t=>{const c=clientById(t.clientId);return `<tr><td class="num">${fmtDate(t.date)}</td><td>${esc(c?c.name:"—")}${t.desc?`<div class="note">${esc(t.desc)}</div>`:""}${t.billed?'<div class="src">Billed</div>':""}</td><td class="num">${fmtDur(t.minutes)}</td><td class="num">${t.rate?peso(t.minutes/60*t.rate,true):""}</td><td>${t.billed?"":`<button class="danger" data-del="${t.id}">Delete</button>`}</td></tr>`}).join(""):`<tr><td colspan="5">${emptyBox("No time logged yet","Entries appear here when you stop the timer.")}</td></tr>`;
+}
+$("#bt-form").onsubmit=async e=>{e.preventDefault();if(!clientById($("#bt-client").value)){toast("Add a client first, under Clients.");return}
+  if(running()){toast("A timer is already running.");return}
+  lsSet("lastRate",$("#bt-rate").value);
+  await save("timer_running",{kind:"timer",clientId:$("#bt-client").value,caseId:$("#bt-case").value,desc:$("#bt-desc").value.trim(),rate:+$("#bt-rate").value||0,start:new Date().toISOString()});toast("Timer started")};
+$("#bt-manual").onclick=()=>{$("#bt-manual-row").hidden=!$("#bt-manual-row").hidden;$("#bt-mdate").value=todayISO()};
+$("#bt-msave").onclick=async()=>{const h=+$("#bt-mhours").value;if(!clientById($("#bt-client").value)||!h){toast("Pick a client and enter the hours.");return}
+  const d=$("#bt-mdate").value||todayISO();
+  if(await save(newId("tm"),{kind:"time",clientId:$("#bt-client").value,caseId:$("#bt-case").value,desc:$("#bt-desc").value.trim(),rate:+$("#bt-rate").value||0,date:d,start:"",end:d+"T23:59:00",minutes:Math.round(h*60),billed:false})){$("#bt-mhours").value="";$("#bt-manual-row").hidden=true;toast("Time saved")}};
+document.addEventListener("click",async e=>{const b=e.target.closest("button");if(!b)return;
+  if(b.id==="bt-stop"){const r=running();if(!r)return;const end=new Date(),min=Math.max(1,Math.round((end-new Date(r.start))/60000));
+    const{id,kind,updatedAt,...rest}=r;
+    if(await save(newId("tm"),Object.assign(rest,{kind:"time",end:end.toISOString(),date:todayISO(),minutes:min,billed:false}),{quiet:true})){await del("timer_running",{quiet:true});render();toast("Saved "+fmtDur(min))}}
+  if(b.id==="bt-discard"){if(b.dataset.armed!=="1"){b.dataset.armed="1";b.textContent="Tap again to discard";return}await del("timer_running")}
+  if(b.dataset.billTime){const cid=b.dataset.billTime,ts=byKind("time").filter(t=>!t.billed&&t.clientId===cid);if(!ts.length)return;
+    const min=ts.reduce((a,t)=>a+(+t.minutes||0),0),amt=Math.round(ts.reduce((a,t)=>a+(+t.minutes||0)/60*(+t.rate||0),0)*100)/100;
+    const dates=ts.map(t=>t.date).sort();const billId=newId("bl");
+    if(!amt){toast("These entries have no hourly rate. Set a rate on the client first.");return}
+    await save(billId,{kind:"bill",clientId:cid,type:"Professional fees (time)",date:todayISO(),amount:amt,orNo:"",desc:`${fmtDur(min)} of work, ${fmtDate(dates[0])}${dates.length>1&&dates[dates.length-1]!==dates[0]?" – "+fmtDate(dates[dates.length-1]):""}`,forCat:""},{quiet:true});
+    for(const t of ts){const{id,...rest}=t;await save(t.id,Object.assign(rest,{billed:true,billId}),{quiet:true})}
+    render();toast(`${peso(amt,true)} added to the client's billing`)}
+});
+
+/* focus */
+let fcAudio=null;
+function fcState(){try{return JSON.parse(lsGet("focus")||"null")||{total:1500,remaining:1500,running:false,endAt:0,label:""}}catch(e){return{total:1500,remaining:1500,running:false,endAt:0,label:""}}}
+function fcSet(o){lsSet("focus",JSON.stringify(o))}
+function focusRunning(){const f=fcState();return f.running&&f.endAt>Date.now()}
+function fcLeft(f){return f.running?Math.max(0,(f.endAt-Date.now())/1000):f.remaining}
+function beep(){try{fcAudio=fcAudio||new (window.AudioContext||window.webkitAudioContext)();const t=fcAudio.currentTime;[0,.35,.7,1.4,1.75,2.1].forEach(o=>{const g=fcAudio.createGain(),osc=fcAudio.createOscillator();osc.frequency.value=880;g.gain.setValueAtTime(.0001,t+o);g.gain.exponentialRampToValueAtTime(.3,t+o+.02);g.gain.exponentialRampToValueAtTime(.0001,t+o+.25);osc.connect(g);g.connect(fcAudio.destination);osc.start(t+o);osc.stop(t+o+.3)})}catch(e){}}
+async function fcAlert(f){beep();try{navigator.vibrate&&navigator.vibrate([400,200,400,200,400])}catch(e){}
+  const brk=f.total<=15*60,msg=brk?"Break is over. Back to work.":"Focus session done"+(f.label?": "+f.label:"")+". Take a short break.";
+  try{if("Notification" in window&&Notification.permission==="granted"){const reg=navigator.serviceWorker&&await navigator.serviceWorker.getRegistration();if(reg)reg.showNotification("Practice Desk",{body:msg,icon:"icon-192.png",tag:"focus"});else new Notification("Practice Desk",{body:msg})}}catch(e){}
+  toast(msg)}
+/* floating timer: a small always-on-top window (laptop) or picture-in-picture tile (tablet/phone) */
+let fcPip=null,fcVid=null,fcCan=null,fcDoneAt=0;
+function fcFloatMode(){return "documentPictureInPicture" in window?"doc":(document.pictureInPictureEnabled&&HTMLCanvasElement.prototype.captureStream?"video":"")}
+function fcFloatOpen(){return !!(fcPip&&!fcPip.closed)||!!(fcVid&&document.pictureInPictureElement===fcVid)}
+function fcFloatView(){const f=fcState(),left=fcLeft(f),done=!f.running&&Date.now()-fcDoneAt<60000,paused=!f.running&&left<f.total&&left>0;
+  return{time:done?"0:00":hms(left).replace(/^0:/,""),pct:done?100:Math.max(0,Math.min(100,100-left/f.total*100)),
+    sub:done?"Time's up":f.running?(f.label||"Focusing"):paused?"Paused":"Ready",btn:f.running?"Pause":paused?"Resume":"Start",done}}
+function fcFloatDraw(force){if(!force&&!fcFloatOpen())return;const v=fcFloatView();
+  if(fcPip&&!fcPip.closed){const d=fcPip.document;d.getElementById("c").textContent=v.time;d.getElementById("r").style.width=v.pct+"%";d.getElementById("l").textContent=v.sub;d.getElementById("b").textContent=v.btn;d.body.className=v.done?"done":"";d.title=v.time+" · Focus"}
+  if(fcCan){const x=fcCan.getContext("2d"),W=fcCan.width,H=fcCan.height;x.fillStyle=v.done?"#1E5B48":"#0F1519";x.fillRect(0,0,W,H);
+    x.textAlign="center";x.textBaseline="middle";x.fillStyle="#E6ECEA";x.font="700 128px system-ui,-apple-system,Segoe UI,Roboto,sans-serif";x.fillText(v.time,W/2,H*.42);
+    x.font="500 30px system-ui,-apple-system,Segoe UI,Roboto,sans-serif";x.fillStyle="#94A3A6";let t=v.sub;while(t.length>4&&x.measureText(t).width>W-40)t=t.slice(0,-2);x.fillText(t===v.sub?t:t+"…",W/2,H*.76);
+    x.fillStyle="#2A363D";x.fillRect(0,H-12,W,12);x.fillStyle="#5FB596";x.fillRect(0,H-12,W*v.pct/100,12)}}
+function fcFloatClose(){try{if(fcPip&&!fcPip.closed)fcPip.close()}catch(e){}try{if(fcVid&&document.pictureInPictureElement===fcVid)document.exitPictureInPicture()}catch(e){}}
+function fcFloatGone(){fcPip=null;if(fcVid){try{fcVid.srcObject.getTracks().forEach(t=>t.stop())}catch(e){}fcVid.remove();fcVid=null;fcCan=null}fcFloatBtn()}
+function fcFloatBtn(){const b=$("#fc-pop");if(b)b.textContent=fcFloatOpen()?"Close floating timer":"Floating timer"}
+async function fcFloat(quiet){if(fcFloatOpen())return;const mode=fcFloatMode();
+  if(!mode){if(!quiet)toast("This browser cannot float the timer. Open Practice Desk in your tablet's floating window instead.");return}
+  try{
+    if(mode==="doc"){const w=await documentPictureInPicture.requestWindow({width:250,height:150});fcPip=w;const d=w.document;d.title="Focus";
+      const st=d.createElement("style");st.textContent="html,body{height:100%;margin:0}body{background:#0F1519;color:#E6ECEA;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;overflow:hidden;user-select:none}body.done{background:#1E5B48}#c{font-size:min(30vw,52vh);font-weight:700;line-height:1;font-variant-numeric:tabular-nums}#l{font-size:12px;color:#94A3A6;max-width:92%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}body.done #l{color:#E6ECEA}#b{font:inherit;font-size:12px;margin-top:2px;padding:3px 14px;border-radius:999px;border:1px solid #2A363D;background:#172027;color:#E6ECEA;cursor:pointer}#bar{position:fixed;left:0;right:0;bottom:0;height:4px;background:#2A363D}#r{display:block;height:100%;width:0;background:#5FB596}";d.head.appendChild(st);
+      d.body.innerHTML='<div id="c"></div><div id="l"></div><button id="b"></button><div id="bar"><i id="r"></i></div>';
+      d.getElementById("b").onclick=()=>$("#fc-go").click();w.addEventListener("pagehide",fcFloatGone)}
+    else{fcCan=document.createElement("canvas");fcCan.width=480;fcCan.height=270;fcVid=document.createElement("video");fcVid.muted=true;fcVid.playsInline=true;
+      fcVid.style.cssText="position:fixed;left:0;bottom:0;width:2px;height:2px;opacity:0;pointer-events:none";document.body.appendChild(fcVid);
+      fcVid.addEventListener("leavepictureinpicture",fcFloatGone);fcFloatDraw(true);fcVid.srcObject=fcCan.captureStream();await fcVid.play();await fcVid.requestPictureInPicture();
+      try{["play","pause"].forEach(a=>navigator.mediaSession.setActionHandler(a,()=>{$("#fc-go").click();fcVid&&fcVid.play().catch(()=>{})}))}catch(e){}}
+  }catch(e){fcFloatGone();if(!quiet)toast("The floating timer could not open on this browser.")}
+  fcFloatBtn();fcFloatDraw()}
+function focusStart(min){const f={total:min*60,remaining:min*60,running:true,endAt:Date.now()+min*60000,label:$("#fc-label").value.trim()};fcSet(f);
+  try{fcAudio=fcAudio||new (window.AudioContext||window.webkitAudioContext)();fcAudio.resume()}catch(e){}fcDoneAt=0;fcFloat(true);renderFocus();renderHome()}
+function renderFocus(){const f=fcState(),left=fcLeft(f);
+  $("#fc-clock").textContent=hms(left).replace(/^0:/,"");$("#fc-ring").style.width=(100-left/f.total*100)+"%";
+  $("#fc-state").textContent=f.running?("Focusing"+(f.label?" on "+f.label:"")):left<f.total&&left>0?"Paused":"Ready · "+fmtDur(f.total/60);
+  $("#fc-go").textContent=f.running?"Pause":left<f.total&&left>0?"Resume":"Start";
+  if(document.activeElement!==$("#fc-label")&&f.label&&!$("#fc-label").value)$("#fc-label").value=f.label;
+  $("#fc-notify").hidden=!("Notification" in window)||Notification.permission!=="default";
+  const T=todayISO(),log=byKind("focus").filter(x=>x.date===T).sort((a,b)=>(b.updatedAt||"").localeCompare(a.updatedAt||""));
+  $("#fc-total").textContent=log.length?log.length+" session"+(log.length>1?"s":"")+" · "+fmtDur(log.reduce((a,x)=>a+x.minutes,0)):"";
+  $("#fc-log").innerHTML=log.length?log.map(x=>`<div class="item" style="grid-template-columns:62px 1fr"><div class="when"><b>${fmtDur(x.minutes)}</b></div><div><div class="ttl">${esc(x.label||"Focus session")}</div><div class="meta">${new Date(x.updatedAt).toLocaleTimeString("en-PH",{hour:"numeric",minute:"2-digit"})}</div></div></div>`).join(""):emptyBox("No sessions yet today","Pick a length and press Start.");fcFloatBtn();fcFloatDraw()}
+$("#fc-presets").onclick=e=>{const b=e.target.closest("[data-m]");if(!b)return;const m=+b.dataset.m;if(m<=15&&!$("#fc-label").value)$("#fc-label").value="Break";focusStart(m)};
+$("#fc-go").onclick=()=>{const f=fcState();
+  if(f.running){f.remaining=fcLeft(f);f.running=false;fcSet(f)}
+  else if(f.remaining>0&&f.remaining<f.total){f.running=true;f.endAt=Date.now()+f.remaining*1000;fcSet(f);try{fcAudio=fcAudio||new AudioContext();fcAudio.resume()}catch(e){}fcFloat(true)}
+  else{focusStart(Math.round(f.total/60)||25);return}
+  renderFocus();renderHome()};
+$("#fc-reset").onclick=()=>{fcDoneAt=0;const f=fcState();fcSet({total:f.total,remaining:f.total,running:false,endAt:0,label:f.label});renderFocus();renderHome()};
+$("#fc-pop").onclick=()=>{if(fcFloatOpen())fcFloatClose();else fcFloat(false)};
+$("#fc-notify").onclick=async()=>{try{await Notification.requestPermission()}catch(e){}renderFocus()};
+async function fcTick(){const f=fcState();if(f.running&&Date.now()>=f.endAt){f.running=false;f.remaining=0;fcSet(f);
+    if(f.total>15*60)await save(newId("fc"),{kind:"focus",date:todayISO(),minutes:Math.round(f.total/60),label:f.label},{quiet:true});
+    fcDoneAt=Date.now();fcAlert(f);fcSet({total:f.total,remaining:f.total,running:false,endAt:0,label:f.label});renderFocus();renderHome()}
+  fcFloatDraw();
+  if(location.hash==="#timebox"){if(tbTab==="focus")renderFocus();else if(tbTab==="bill"){const r=running(),c=$("#bt-clock");if(r&&c)c.textContent=hms((Date.now()-new Date(r.start))/1000)}}}
+setInterval(fcTick,1000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)fcTick()});
+let lastPlanMin=-1;setInterval(()=>{const m=nowMin();if(m!==lastPlanMin){lastPlanMin=m;if(location.hash==="#timebox"&&tbTab==="plan"&&document.activeElement.tagName!=="INPUT")renderPlan()}},20000);
+
+/* ---------- cloud sync (Firebase) ---------- */
+const FB_VER="10.12.2";
+let fb=null,fs=null,auth=null,uid=null,unsub=null,syncState="off",syncMsg="",firstServer=false;
+const FB_BUILTIN={apiKey:"AIzaSyDWv009H1EDVO4FGxxhMZGXzf29ZmoiOIo",authDomain:"practice-desk-e7eea.firebaseapp.com",projectId:"practice-desk-e7eea",storageBucket:"practice-desk-e7eea.firebasestorage.app",messagingSenderId:"676350772503",appId:"1:676350772503:web:29c37d18ef53bd2b752352"};
+function fbConfig(){try{return JSON.parse(lsGet("fbConfig")||"null")||FB_BUILTIN}catch(e){return FB_BUILTIN}}
+function dirty(){try{return JSON.parse(lsGet("dirty")||"{}")}catch(e){return{}}}
+function markDirty(id,op){if(!lsGet("syncedUid"))return;const d=dirty();d[id]=op;lsSet("dirty",JSON.stringify(d))}
+const clean=o=>JSON.parse(JSON.stringify(o));
+const rref=id=>fs.collection("users").doc(uid).collection("records").doc(id);
+function cloudPut(rec){if(fs&&uid){rref(rec.id).set(clean(rec)).catch(e=>setSyncState("err","Couldn't upload: "+(e.code||e.message)))}else markDirty(rec.id,"put")}
+function cloudDel(id){if(fs&&uid){rref(id).delete().catch(()=>{})}else markDirty(id,"del")}
+function setSyncState(st,msg){syncState=st;syncMsg=msg||"";const d=$("#sync-dot");if(d)d.className="dot"+(st==="on"?" on":st==="err"?" err":st==="wait"?" wait":"");if(location.hash==="#sync")renderSync()}
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement("script");s.src=src;s.onload=res;s.onerror=()=>rej(new Error("Couldn't load "+src));document.head.appendChild(s)})}
+async function cloudStart(){const cfg=fbConfig();if(!cfg){setSyncState("off","Not set up");return}
+  if(fb)return;setSyncState("wait","Connecting…");
+  try{for(const m of ["app","auth","firestore"])await loadScript(`https://www.gstatic.com/firebasejs/${FB_VER}/firebase-${m}-compat.js`);
+    fb=firebase.initializeApp(cfg);auth=firebase.auth();fs=firebase.firestore();
+    try{await fs.enablePersistence({synchronizeTabs:true})}catch(e){}
+    auth.getRedirectResult().catch(e=>setSyncState("err",authErr(e)));
+    auth.onAuthStateChanged(u=>{uid=u?u.uid:null;if(unsub){unsub();unsub=null}
+      if(!u){setSyncState("off","Signed out. Records stay on this device only.");return}
+      setSyncState("wait","Syncing…");firstServer=false;
+      unsub=fs.collection("users").doc(uid).collection("records").onSnapshot({includeMetadataChanges:true},onRemote,e=>setSyncState("err","Sync stopped: "+(e.code==="permission-denied"?"the security rules are blocking access. Check the rules step.":(e.code||e.message))))})}
+  catch(e){fb=null;setSyncState("err",navigator.onLine?e.message:"Offline. Sync starts when you're back online.")}}
+function authErr(e){const c=e&&e.code||"";return c==="auth/unauthorized-domain"?`This web address isn't allowed yet. In Firebase, add ${location.hostname} under Authentication › Settings › Authorized domains.`:c==="auth/popup-closed-by-user"?"Sign-in was cancelled.":c==="auth/operation-not-allowed"?"Google sign-in isn't turned on in Firebase (Authentication › Sign-in method).":(e&&e.message)||"Sign-in failed."}
+async function onRemote(snap){
+  const fromServer=!snap.metadata.fromCache;
+  const remote=new Map(snap.docs.map(d=>[d.id,d.data()]));
+  const localMap=new Map(items.map(r=>[r.id,r]));
+  const toLocal=[],toDelete=[];
+  const firstHere=lsGet("syncedUid")!==uid;
+  if(fromServer&&!firstServer){firstServer=true;
+    if(firstHere){for(const r of items){const rm=remote.get(r.id);if(!rm||(r.updatedAt||"")>(rm.updatedAt||""))rref(r.id).set(clean(r)).catch(()=>{})}
+      lsSet("syncedUid",uid);lsSet("dirty","{}")}
+    else{const d=dirty();for(const[id,op] of Object.entries(d)){if(op==="del"){rref(id).delete().catch(()=>{});remote.delete(id)}else{const r=localMap.get(id);if(r){rref(id).set(clean(r)).catch(()=>{});remote.set(id,r)}}}
+      lsSet("dirty","{}");
+      for(const r of items)if(!remote.has(r.id))toDelete.push(r.id)}}
+  if(firstHere&&!fromServer){setSyncState("wait","Syncing…");return}
+  for(const[id,rm] of remote){const l=localMap.get(id);if(!l||(rm.updatedAt||"")>(l.updatedAt||""))toLocal.push(Object.assign({},rm,{id}))}
+  snap.docChanges().forEach(ch=>{if(ch.type==="removed"&&localMap.has(ch.doc.id))toDelete.push(ch.doc.id)});
+  if(toLocal.length||toDelete.length){
+    await tx("records","readwrite",st=>{toLocal.forEach(r=>st.put(r));toDelete.forEach(id=>st.delete(id))});
+    const del=new Set(toDelete);items=items.filter(r=>!del.has(r.id));toLocal.forEach(r=>{const i=items.findIndex(x=>x.id===r.id);if(i>=0)items[i]=r;else items.push(r)});
+    render()}
+  const pendingW=snap.metadata.hasPendingWrites;
+  setSyncState(fromServer?"on":"wait",fromServer?(pendingW?"Uploading changes…":"Up to date"):"Offline. Changes will sync when you're back online.")}
+async function signIn(){if(!auth){await cloudStart();if(!auth)return}
+  const pr=new firebase.auth.GoogleAuthProvider();pr.setCustomParameters({prompt:"select_account"});
+  try{await auth.signInWithPopup(pr)}catch(e){if(/popup-blocked|operation-not-supported|cancelled-popup/.test(e.code||""))auth.signInWithRedirect(pr);else setSyncState("err",authErr(e))}}
+function renderSync(){renderGcard();const cfg=fbConfig(),u=auth&&auth.currentUser;
+  $("#sy-status").innerHTML=`<div class="row" style="gap:8px"><span class="dot${syncState==="on"?" on":syncState==="err"?" err":syncState==="wait"?" wait":""}"></span><b>${!cfg?"Sync is not set up":u?"Syncing as "+esc(u.email||"you"):"Not signed in"}</b></div>
+   <div class="meta">${esc(syncMsg||(!cfg?"Follow the setup steps, then paste your Firebase settings below.":""))}</div>
+   ${u?`<div class="note">Sign in with this same Google account on your computer, phone and tablet.</div>`:""}`;
+  $("#sy-actions").innerHTML=!cfg?"":u?`<button id="sy-out">Sign out on this device</button>`:`<button class="primary" id="sy-in">Sign in with Google</button>`;
+  if(document.activeElement!==$("#sy-config"))$("#sy-config").value=cfg?JSON.stringify(cfg,null,2):"";
+  $("#sy-clear").hidden=!lsGet("fbConfig");$("#sy-setup").hidden=!lsGet("fbConfig")&&!!u}
+document.addEventListener("click",async e=>{const b=e.target.closest("button");if(!b)return;
+  if(b.id==="sy-in")signIn();
+  if(b.id==="sy-out"&&auth){await auth.signOut();renderSync()}});
+$("#sy-save").onclick=()=>{const t=$("#sy-config").value;const o={};let m;const re=/["']?(\w+)["']?\s*:\s*["']([^"']+)["']/g;while((m=re.exec(t)))o[m[1]]=m[2];
+  if(!o.apiKey||!o.projectId||!o.appId){toast("That doesn't look complete. Copy the whole firebaseConfig block.");return}
+  if(!o.authDomain)o.authDomain=o.projectId+".firebaseapp.com";
+  lsSet("fbConfig",JSON.stringify(o));toast("Settings saved");fb?location.reload():cloudStart().then(renderSync)};
+$("#sy-clear").onclick=function(){if(this.dataset.armed!=="1"){this.dataset.armed="1";this.textContent="Tap again to remove";return}
+  try{localStorage.removeItem("fbConfig");localStorage.removeItem("syncedUid")}catch(e){}location.reload()};
+window.addEventListener("hashchange",e=>{if(location.hash==="#clients"&&!/#clients$/.test(e.oldURL||"")&&!window.__keepClient){curClient=null;renderClients()}window.__keepClient=false;if(location.hash==="#sync")renderSync();if(location.hash==="#timebox")renderTimebox()});
+window.addEventListener("online",()=>{if(!fb)cloudStart()});
+
+/* ---------- Google Calendar (one-way: Practice Desk -> Google Calendar) ---------- */
+const GC_SCOPE="https://www.googleapis.com/auth/calendar.app.created";
+const GC_API="https://www.googleapis.com/calendar/v3";
+let gcToken=null,gcExp=0,gcTimer=null,gcBusy=false;
+try{const t=JSON.parse(lsGet("gcTok")||"null");if(t&&t.exp>Date.now()+60000){gcToken=t.tok;gcExp=t.exp}}catch(e){}
+function gcMap(){return items.find(i=>i.id==="gcal_map")||{kind:"gcal",calId:"",entries:{},opts:{events:true,tasks:true,blocks:false}}}
+function gcOn(){return !!gcMap().calId}
+function gcValid(){return gcToken&&gcExp>Date.now()+60000}
+async function gcConnect(){if(!auth){await cloudStart();if(!auth){toast("Couldn't reach Google. Check your internet.");return}}
+  const pr=new firebase.auth.GoogleAuthProvider();pr.addScope(GC_SCOPE);pr.setCustomParameters({prompt:"consent"});
+  try{const r=auth.currentUser?await auth.currentUser.reauthenticateWithPopup(pr):await auth.signInWithPopup(pr);
+    const tok=r.credential&&r.credential.accessToken;if(!tok)throw new Error("Google didn't give calendar access. Try again and tick the calendar box.");
+    gcToken=tok;gcExp=Date.now()+55*60000;lsSet("gcTok",JSON.stringify({tok,exp:gcExp}));
+    await gcEnsureCal();await gcSync(true);renderSync()}
+  catch(e){gcShow(gcErr(e))}}
+function gcErr(e){const m=(e&&(e.code||e.message))||"";
+  if(/accessNotConfigured|has not been used|disabled/i.test(m))return "The Google Calendar API is not turned on yet. Do the 'Turn on Google Calendar API' step, wait 2 minutes, then try again.";
+  if(/popup-closed|cancelled/.test(m))return "Connection was cancelled.";
+  if(/unauthorized-domain/.test(m))return authErr(e);
+  return m||"Couldn't connect to Google Calendar."}
+let gcMsg="";function gcShow(m){gcMsg=m;if(location.hash==="#sync")renderSync();renderGcBanner()}
+async function gapi(method,path,body){const r=await fetch(GC_API+path,{method,headers:{Authorization:"Bearer "+gcToken,"Content-Type":"application/json"},body:body?JSON.stringify(body):undefined});
+  if(r.status===401){gcToken=null;lsSet("gcTok","null");throw new Error("expired")}
+  if(r.status===204||r.status===410||(method==="DELETE"&&r.status===404))return null;
+  const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error((j.error&&j.error.message)||("Google Calendar error "+r.status));return j}
+async function gcEnsureCal(){const m=gcMap();if(m.calId){try{await gapi("GET","/calendars/"+encodeURIComponent(m.calId));return}catch(e){if(e.message==="expired")throw e}}
+  const c=await gapi("POST","/calendars",{summary:"Practice Desk",description:"Hearings, meetings and deadlines from Practice Desk",timeZone:"Asia/Manila"});
+  await save("gcal_map",Object.assign({},m,{kind:"gcal",calId:c.id,entries:{}}),{quiet:true})}
+function hash(o){const s=JSON.stringify(o);let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))|0;return String(h)}
+function gcDesired(){const m=gcMap(),o=m.opts||{},T=todayISO(),out={};
+  const dt=(d,t)=>d+"T"+(t||"08:00")+":00";
+  if(o.events!==false)byKind("event").filter(e=>e.date>=T).forEach(e=>{const st=e.time||"08:00",len=e.type==="Client meeting"?60:120;
+    out["ev:"+e.id]={d:e.date,body:{summary:(e.type==="Client meeting"?"Meeting: ":e.type+": ")+e.title,location:e.court||"",
+      description:[e.caseNo,e.client&&("Client: "+e.client),e.notes].filter(Boolean).join("\n"),
+      start:{dateTime:dt(e.date,st),timeZone:"Asia/Manila"},end:{dateTime:dt(e.date,fromMin(Math.min(toMin(st)+len,23*60+59))),timeZone:"Asia/Manila"},
+      reminders:{useDefault:false,overrides:[{method:"popup",minutes:1440},{method:"popup",minutes:120}]}}}});
+  if(o.tasks!==false)byKind("task").filter(t=>t.stage!=="Filed"&&t.due>=T).forEach(t=>{
+    out["tk:"+t.id]={d:t.due,body:{summary:"DEADLINE: "+t.title,description:[t.matter,t.basis,"Stage: "+t.stage].filter(Boolean).join("\n"),
+      start:{date:t.due},end:{date:addDays(t.due,1)},colorId:"11",
+      reminders:{useDefault:false,overrides:[{method:"popup",minutes:2*1440+900},{method:"popup",minutes:900}]}}}});
+  if(o.blocks)byKind("plan").filter(p=>p.date>=T).forEach(p=>(p.blocks||[]).forEach(b=>{
+    out["tb:"+b.id]={d:p.date,body:{summary:b.title+" ("+b.cat+")",start:{dateTime:dt(p.date,b.start),timeZone:"Asia/Manila"},end:{dateTime:dt(p.date,b.end),timeZone:"Asia/Manila"},colorId:"2",reminders:{useDefault:false,overrides:[{method:"popup",minutes:5}]}}}}));
+  return out}
+function gcLater(){if(!gcOn())return;lsSet("gcPending","1");renderGcBanner();clearTimeout(gcTimer);if(gcValid())gcTimer=setTimeout(()=>gcSync(),2500)}
+async function gcSync(manual){if(gcBusy||!gcOn())return;if(!gcValid()){lsSet("gcPending","1");renderGcBanner();if(manual)gcShow("Tap Reconnect to update Google Calendar.");return}
+  gcBusy=true;gcShow("Updating Google Calendar…");
+  try{const m=gcMap(),cal="/calendars/"+encodeURIComponent(m.calId)+"/events",want=gcDesired(),ent=Object.assign({},m.entries||{}),T=todayISO();let n=0;
+    for(const[k,w] of Object.entries(want)){const h=hash(w.body),cur=ent[k];
+      if(!cur){const ev=await gapi("POST",cal,w.body);ent[k]={id:ev.id,h,d:w.d};n++}
+      else if(cur.h!==h){try{await gapi("PUT",cal+"/"+cur.id,w.body)}catch(e){if(e.message==="expired")throw e;const ev=await gapi("POST",cal,w.body);cur.id=ev.id}ent[k]={id:cur.id,h,d:w.d};n++}}
+    for(const[k,cur] of Object.entries(ent)){if(want[k])continue;
+      const[kind,rid]=k.split(":");const rec=kind==="tb"?null:items.find(i=>i.id===rid);
+      const gone=kind==="tb"?cur.d>=T:(!rec||(kind==="tk"&&rec.stage==="Filed")||cur.d>=T);
+      if(gone){await gapi("DELETE",cal+"/"+cur.id);delete ent[k];n++}}
+    await save("gcal_map",Object.assign({},gcMap(),{entries:ent}),{quiet:true});
+    lsSet("gcPending","");gcShow(n?`Google Calendar updated (${n} change${n>1?"s":""}).`:"Google Calendar is up to date.")}
+  catch(e){if(e.message==="expired"){lsSet("gcPending","1");gcShow("Google access expired. Tap Reconnect to finish updating.")}else gcShow(gcErr(e))}
+  finally{gcBusy=false;renderGcBanner()}}
+function renderGcBanner(){const b=$("#gc-banner");if(!b)return;b.hidden=!(gcOn()&&lsGet("gcPending")==="1"&&!gcValid())}
+function renderGcard(){const m=gcMap(),o=m.opts||{};const box=$("#gc-card");if(!box)return;
+  box.innerHTML=`<div class="row" style="gap:8px"><span class="dot${gcOn()&&gcValid()?" on":gcOn()?" wait":""}"></span><b>${gcOn()?"Connected to Google Calendar":"Google Calendar not connected"}</b></div>
+  <div class="meta">${esc(gcMsg||(gcOn()?"Items appear in a calendar named “Practice Desk”.":"Adds your hearings, meetings and deadlines to Google Calendar, with reminders."))}</div>
+  ${gcOn()?`<label class="check"><input type="checkbox" data-gco="events" ${o.events!==false?"checked":""}> Hearings and client meetings</label>
+  <label class="check"><input type="checkbox" data-gco="tasks" ${o.tasks!==false?"checked":""}> Pleading deadlines (all-day, reminders 3 days and 1 day before)</label>
+  <label class="check"><input type="checkbox" data-gco="blocks" ${o.blocks?"checked":""}> Time box blocks</label>`:""}
+  <div class="row">${!gcOn()?`<button class="primary" id="gc-connect">Connect Google Calendar</button>`:gcValid()?`<button class="primary" id="gc-now">Update now</button>`:`<button class="primary" id="gc-connect">Reconnect</button>`}${gcOn()?`<button class="danger" id="gc-off">Disconnect</button>`:""}</div>`}
+document.addEventListener("click",async e=>{const b=e.target.closest("button");if(!b)return;
+  if(b.id==="gc-connect"||b.id==="gc-banner-btn")gcConnect();
+  if(b.id==="gc-now")gcSync(true);
+  if(b.id==="gc-off"){if(b.dataset.armed!=="1"){b.dataset.armed="1";b.textContent="Tap again: stop updating Google Calendar";return}
+    await save("gcal_map",{kind:"gcal",calId:"",entries:{},opts:gcMap().opts},{quiet:true});gcToken=null;lsSet("gcTok","null");lsSet("gcPending","");gcShow("Disconnected. The “Practice Desk” calendar stays in Google Calendar; delete it there if you no longer want it.")}});
+document.addEventListener("change",async e=>{const c=e.target.closest("[data-gco]");if(!c)return;const m=gcMap();const o=Object.assign({},m.opts,{[c.dataset.gco]:c.checked});
+  await save("gcal_map",Object.assign({},m,{opts:o}),{quiet:true});gcSync(true)});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&gcOn()&&lsGet("gcPending")==="1"&&gcValid())gcSync()});
+
+/* ---------- backup ---------- */
+function daysSince(iso){return iso?Math.floor((Date.now()-new Date(iso).getTime())/864e5):null}
+function backupNudge(){const last=lsGet("lastBackup"),d=daysSince(last);
+  if(items.length&&(d===null||d>=7))setSync(d===null?"You haven't made a backup yet. Open Backup and download one.":`Last backup was ${d} days ago. Open Backup and download a new one.`);
+  else if(!$("#sync").textContent.startsWith("This browser"))setSync("")}
+async function renderBackup(){const box=$("#bk-status");if(!box)return;
+  const files=byKind("file"),fsz=files.reduce((s,f)=>s+(f.size||0),0),last=lsGet("lastBackup");
+  let est="";try{if(navigator.storage&&navigator.storage.estimate){const e=await navigator.storage.estimate();est=`Using ${fmtSize(e.usage||0)} of about ${fmtSize(e.quota||0)} available to this app.`}}catch(e){}
+  let pers="";try{if(navigator.storage&&navigator.storage.persisted)pers=(await navigator.storage.persisted())?"The browser has agreed to keep this app's data.":"The browser may clear this data if the phone runs low on space. Back up often."}catch(e){}
+  box.innerHTML=`<div><b>${items.length-files.length}</b> records and <b>${files.length}</b> files (${fmtSize(fsz)}) on this phone.</div>
+  <div class="meta">${last?"Last backup: "+esc(new Date(last).toLocaleString("en-PH",{dateStyle:"medium",timeStyle:"short"})):"No backup made yet."}</div>
+  ${est?`<div class="meta">${esc(est)}</div>`:""}${pers?`<div class="meta">${esc(pers)}</div>`:""}`}
+window.addEventListener("hashchange",()=>{if(location.hash==="#backup")renderBackup()});
+const b64=blob=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(",")[1]||"");r.onerror=()=>rej(r.error);r.readAsDataURL(blob)});
+$("#bk-save").onclick=async function(){if(!items.length){toast("Nothing to back up yet.");return}
+  this.disabled=true;this.textContent="Preparing…";
+  try{const out={app:"palma-practice-desk",version:1,exportedAt:new Date().toISOString(),records:items,files:{},fbConfig:fbConfig()};
+    if($("#bk-files").checked){for(const f of byKind("file")){const bl=f.blobKey&&await getBlob(f.blobKey);if(bl)out.files[f.blobKey]={type:bl.type||f.contentType,data:await b64(bl)}}}
+    saveFile("practice-desk-backup-"+todayISO()+".json",JSON.stringify(out),"application/json");
+    lsSet("lastBackup",new Date().toISOString());backupNudge();renderBackup()}
+  catch(e){toast("Backup failed: "+(e&&e.message||"try again"))}
+  finally{this.disabled=false;this.textContent="Download backup now"}};
+let pending=null;
+$("#bk-load").onchange=async e=>{const f=e.target.files[0];pending=null;$("#bk-confirm").hidden=true;if(!f)return;
+  try{const data=JSON.parse(await f.text());if(data.app!=="palma-practice-desk"||!Array.isArray(data.records))throw new Error("This isn't a Practice Desk backup file.");
+    pending=data;const nf=Object.keys(data.files||{}).length;
+    $("#bk-note").textContent=`Backup from ${new Date(data.exportedAt).toLocaleString("en-PH",{dateStyle:"medium",timeStyle:"short"})}: ${data.records.length} records, ${nf} files. Tap Restore now to add them to this phone.`;$("#bk-confirm").hidden=false}
+  catch(err){$("#bk-note").textContent=err.message||"That file couldn't be read."}};
+$("#bk-cancel").onclick=()=>{pending=null;$("#bk-confirm").hidden=true;$("#bk-load").value=""};
+$("#bk-go").onclick=async function(){if(!pending||!idb)return;this.disabled=true;
+  try{for(const[k,v] of Object.entries(pending.files||{})){const bin=atob(v.data),arr=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);await putBlob(k,new Blob([arr],{type:v.type||""}))}
+    await tx("records","readwrite",st=>{pending.records.forEach(r=>{if(r&&r.id&&r.kind)st.put(r)})});
+    items=(await tx("records","readonly",st=>st.getAll()))||[];render();
+    pending.records.forEach(r=>{if(r&&r.id&&r.kind)cloudPut(r)});
+    if(pending.fbConfig&&!lsGet("fbConfig")){lsSet("fbConfig",JSON.stringify(pending.fbConfig));cloudStart()}
+    toast(`Restored ${pending.records.length} records`);$("#bk-note").textContent="Restore complete.";pending=null;$("#bk-confirm").hidden=true;$("#bk-load").value="";renderBackup();backupNudge()}
+  catch(e){toast("Restore stopped: "+(e&&e.name==="QuotaExceededError"?"phone storage is full.":(e.message||"try again")))}
+  finally{this.disabled=false}};
+
+render();
+})();
+</script>
+<script>if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));</script>
+</body></html>
